@@ -1,0 +1,256 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   CROSS-PLATFORM SAFE AREA SUPPORT
+   iOS, Android (with notch/cutout), Tablets
+   ============================================ */
+
+html {
+  /* Prevent overscroll bounce on iOS */
+  overscroll-behavior: none;
+}
+
+html, body {
+  padding: 0;
+  margin: 0;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  /* Disable text selection for app-like feel */
+  -webkit-user-select: none;
+  user-select: none;
+  /* Prevent pull-to-refresh on mobile */
+  overscroll-behavior-y: contain;
+}
+
+/* Re-enable text selection for inputs and textareas */
+input, textarea, [contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* ============================================
+   SAFE AREA UTILITY CLASSES
+   ============================================ */
+
+/* Top safe area - for status bar, notch, Dynamic Island */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Bottom safe area - for home indicator, navigation bar */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Left safe area - for landscape mode on notched devices */
+.safe-area-left {
+  padding-left: env(safe-area-inset-left, 0px);
+}
+
+/* Right safe area - for landscape mode on notched devices */
+.safe-area-right {
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* All safe areas combined */
+.safe-area-inset {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* Margin versions (for when padding doesn't work) */
+.safe-margin-top {
+  margin-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-margin-bottom {
+  margin-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ============================================
+   SCREEN HEIGHT UTILITIES
+   ============================================ */
+
+/* Min height accounting for safe areas */
+.min-h-screen-safe {
+  min-height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  min-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+}
+
+/* Full height with safe areas */
+.h-screen-safe {
+  height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+}
+
+/* Dynamic viewport height (accounts for mobile browser chrome) */
+.h-dvh {
+  height: 100vh;
+  height: 100dvh;
+}
+
+.min-h-dvh {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* ============================================
+   TABLET-SPECIFIC STYLES
+   ============================================ */
+
+/* Tablet container - adds horizontal padding on larger screens */
+.tablet-container {
+  padding-left: var(--tablet-horizontal-padding, 0px);
+  padding-right: var(--tablet-horizontal-padding, 0px);
+}
+
+/* Max width container for tablets to prevent overly wide content */
+@media (min-width: 768px) {
+  .tablet-max-width {
+    max-width: 768px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+@media (min-width: 1024px) {
+  .tablet-max-width {
+    max-width: 900px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .tablet-max-width {
+    max-width: 1024px;
+  }
+}
+
+/* ============================================
+   FIXED POSITION HELPERS WITH SAFE AREAS
+   ============================================ */
+
+/* Fixed header that respects safe area */
+.fixed-header-safe {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding-top: env(safe-area-inset-top, 0px);
+  z-index: 50;
+}
+
+/* Fixed footer that respects safe area */
+.fixed-footer-safe {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  z-index: 50;
+}
+
+/* ============================================
+   CAPACITOR/WEBVIEW SPECIFIC
+   ============================================ */
+
+/* Ensure content doesn't go behind system UI on Android */
+@supports (padding: max(0px)) {
+  .safe-area-top {
+    padding-top: max(env(safe-area-inset-top, 0px), 0px);
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 0px);
+  }
+}
+
+/* Android status bar fallback (when env() not supported) */
+@supports not (padding-top: env(safe-area-inset-top)) {
+  .safe-area-top {
+    padding-top: 48px; /* Increased for Android status bar + potential notch */
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: 0px;
+  }
+}
+
+/* Additional Android safety - ensure minimum padding even when env() returns 0 */
+.android-safe-top {
+  padding-top: max(env(safe-area-inset-top, 48px), 48px);
+}
+
+/* Force minimum top padding on Android for critical UI elements */
+@media screen and (max-width: 768px) {
+  .safe-area-top {
+    min-height: 48px;
+    padding-top: max(env(safe-area-inset-top, 0px), 32px);
+  }
+}
+
+/* SF Pro Display/Text for iOS, Inter for Android/Web */
+body {
+  font-family: -apple-system, 'SF Pro Text', 'Inter', BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Helvetica Neue', sans-serif;
+  font-weight: 400;
+}
+
+/* Headers and titles use SF Pro Display on iOS, Inter on others */
+h1, h2, h3, h4, h5, h6,
+.font-bold,
+.font-semibold,
+.text-lg, .text-xl, .text-2xl, .text-3xl, .text-4xl {
+  font-family: -apple-system, 'SF Pro Display', 'Inter', BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Helvetica Neue', sans-serif;
+}
+
+/* Ensure all text elements use the proper font stack */
+* {
+  font-family: -apple-system, 'SF Pro Text', 'Inter', BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Helvetica Neue', sans-serif;
+}
+
+/* Quill Rich Text Editor Styling */
+.ql-container {
+  font-family: -apple-system, 'SF Pro Text', 'Inter', sans-serif !important;
+  font-size: 14px;
+}
+
+.ql-editor {
+  min-height: 120px;
+}
+
+.ql-editor.ql-blank::before {
+  color: #9ca3af;
+  font-style: normal;
+}
+
+.ql-toolbar {
+  border-top-left-radius: 0.375rem;
+  border-top-right-radius: 0.375rem;
+  background-color: #f9fafb;
+}
+
+.ql-container {
+  border-bottom-left-radius: 0.375rem;
+  border-bottom-right-radius: 0.375rem;
+}
+
+/* Smooth fade-in animation for chat messages */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}

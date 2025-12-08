@@ -1,0 +1,493 @@
+/* GuidedBreathing.css - Voice and visual feedback for breathing exercises */
+
+/* Voice indicator for breathing guidance */
+.breathing-voice-indicator {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(79, 209, 197, 0.95);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(79, 209, 197, 0.3);
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Breathing voice wave - calm colors */
+.breathing-voice-wave {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.breathing-voice-wave span {
+  width: 3px;
+  height: 16px;
+  background: white;
+  border-radius: 2px;
+  animation: breathingWave 1s infinite ease-in-out;
+}
+
+.breathing-voice-wave span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.breathing-voice-wave span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes breathingWave {
+  0%, 100% { 
+    height: 8px;
+    opacity: 0.5;
+  }
+  50% { 
+    height: 20px;
+    opacity: 1;
+  }
+}
+
+/* Breathing circle - visual guide */
+.breathing-circle-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  padding: 40px 20px;
+}
+
+.breathing-circle {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4fd1c5 0%, #38b2ac 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 40px rgba(79, 209, 197, 0.4);
+  position: relative;
+  margin: 20px 0;
+}
+
+/* Breathing animations - using CSS variables for dynamic duration */
+.breathing-circle.inhale {
+  animation: expandCircle var(--inhale-duration, 4s) ease-in-out forwards;
+}
+
+.breathing-circle.hold {
+  animation: holdCircle var(--hold-duration, 4s) ease-in-out forwards;
+  transform: scale(1.2);
+}
+
+.breathing-circle.exhale {
+  animation: contractCircle var(--exhale-duration, 6s) ease-in-out forwards;
+}
+
+.breathing-circle.rest {
+  animation: restPulse var(--rest-duration, 2s) ease-in-out forwards;
+}
+
+.breathing-circle.idle {
+  transform: scale(1);
+  transition: transform 0.5s ease-out;
+}
+
+@keyframes expandCircle {
+  0% {
+    transform: scale(0.85);
+  }
+  100% {
+    transform: scale(1.25);
+  }
+}
+
+@keyframes holdCircle {
+  0%, 100% {
+    transform: scale(1.25);
+  }
+  50% {
+    transform: scale(1.22);
+  }
+}
+
+@keyframes contractCircle {
+  0% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(0.85);
+  }
+}
+
+@keyframes restPulse {
+  0%, 100% {
+    transform: scale(0.85);
+  }
+  50% {
+    transform: scale(0.9);
+  }
+}
+
+/* Breathing instruction text */
+.breathing-instruction {
+  font-size: 28px;
+  font-weight: 600;
+  color: #2d3748;
+  text-align: center;
+  margin: 20px 0;
+  min-height: 40px;
+  transition: all 0.3s ease;
+}
+
+.breathing-instruction.fade {
+  opacity: 0.5;
+}
+
+/* Breathing phase indicator */
+.breathing-phase {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 24px;
+  font-weight: bold;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+/* Breathing timer/counter with smooth animation */
+.breathing-timer {
+  font-size: 48px;
+  font-weight: bold;
+  color: #4fd1c5;
+  text-align: center;
+  margin: 20px 0;
+  animation: timerPulse 1s ease-in-out;
+}
+
+@keyframes timerPulse {
+  0% {
+    transform: scale(1.1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Breathing progress bar */
+.breathing-progress {
+  width: 100%;
+  max-width: 400px;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 20px auto;
+}
+
+.breathing-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #4fd1c5 0%, #38b2ac 100%);
+  transition: width 0.3s ease;
+  border-radius: 4px;
+}
+
+/* Cycle counter */
+.cycle-counter {
+  text-align: center;
+  font-size: 18px;
+  color: #718096;
+  margin: 16px 0;
+}
+
+.cycle-counter .current {
+  font-size: 24px;
+  font-weight: bold;
+  color: #4fd1c5;
+}
+
+/* Breathing technique cards */
+.breathing-technique-card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  margin: 12px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.breathing-technique-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 16px rgba(79, 209, 197, 0.2);
+  border-color: #4fd1c5;
+}
+
+.breathing-technique-card.selected {
+  border-color: #4fd1c5;
+  background: linear-gradient(135deg, #e6fffa 0%, #f0fff4 100%);
+}
+
+.breathing-technique-card h3 {
+  color: #2d3748;
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.breathing-technique-card p {
+  color: #718096;
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Start/Stop button */
+.breathing-control-btn {
+  background: linear-gradient(135deg, #4fd1c5 0%, #38b2ac 100%);
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  border-radius: 28px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(79, 209, 197, 0.3);
+  margin: 20px 0;
+}
+
+.breathing-control-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(79, 209, 197, 0.4);
+}
+
+.breathing-control-btn:active {
+  transform: translateY(0);
+}
+
+.breathing-control-btn.stop {
+  background: linear-gradient(135deg, #fc8181 0%, #f56565 100%);
+  box-shadow: 0 4px 12px rgba(252, 129, 129, 0.3);
+}
+
+.breathing-control-btn.stop:hover {
+  box-shadow: 0 6px 16px rgba(252, 129, 129, 0.4);
+}
+
+/* Breathing session complete */
+.breathing-complete {
+  text-align: center;
+  padding: 40px 20px;
+  animation: completeFade 0.5s ease-in;
+}
+
+@keyframes completeFade {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.breathing-complete h2 {
+  color: #4fd1c5;
+  font-size: 32px;
+  margin: 0 0 16px 0;
+}
+
+.breathing-complete p {
+  color: #718096;
+  font-size: 18px;
+  margin: 8px 0;
+}
+
+/* Ripple effect on breathing circle */
+.breathing-circle::before,
+.breathing-circle::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid rgba(79, 209, 197, 0.5);
+  animation: ripple 2s infinite ease-out;
+}
+
+.breathing-circle::after {
+  animation-delay: 1s;
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* Voice settings toggle */
+.breathing-voice-toggle {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: white;
+  border: 2px solid #4fd1c5;
+  color: #4fd1c5;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 100;
+}
+
+.breathing-voice-toggle.active {
+  background: #4fd1c5;
+  color: white;
+}
+
+.breathing-voice-toggle:hover {
+  transform: scale(1.05);
+}
+
+/* Breathing stats after session */
+.breathing-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+  max-width: 500px;
+  margin: 24px auto;
+}
+
+.breathing-stat-card {
+  background: white;
+  padding: 16px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.breathing-stat-card .value {
+  font-size: 28px;
+  font-weight: bold;
+  color: #4fd1c5;
+  margin: 4px 0;
+}
+
+.breathing-stat-card .label {
+  font-size: 14px;
+  color: #718096;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .breathing-circle {
+    width: 160px;
+    height: 160px;
+  }
+  
+  .breathing-instruction {
+    font-size: 22px;
+  }
+  
+  .breathing-timer {
+    font-size: 36px;
+  }
+  
+  .breathing-phase {
+    font-size: 18px;
+  }
+  
+  .breathing-control-btn {
+    padding: 14px 28px;
+    font-size: 16px;
+  }
+  
+  .breathing-voice-indicator {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+  
+  .breathing-voice-toggle {
+    top: 10px;
+    right: 10px;
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}
+
+/* Accessibility - reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .breathing-circle,
+  .breathing-voice-wave span,
+  .breathing-circle::before,
+  .breathing-circle::after {
+    animation: none !important;
+  }
+  
+  .breathing-circle.inhale {
+    transform: scale(1.2);
+  }
+  
+  .breathing-circle.exhale {
+    transform: scale(0.8);
+  }
+  
+  .breathing-circle.hold {
+    transform: scale(1);
+  }
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+  .breathing-instruction {
+    color: #e2e8f0;
+  }
+  
+  .breathing-technique-card {
+    background: #2d3748;
+    color: #e2e8f0;
+  }
+  
+  .breathing-technique-card h3 {
+    color: #e2e8f0;
+  }
+  
+  .breathing-stat-card {
+    background: #2d3748;
+  }
+}

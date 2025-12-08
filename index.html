@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <!-- Viewport for iOS, Android, and tablets with notches/cutouts -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1.0" />
+    <!-- Retro Horror Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Creepster&display=swap" rel="stylesheet">
+    <!-- iOS PWA support -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- Android theme color -->
+    <meta name="theme-color" content="#1a1a2e" />
+    <!-- Mobile web app capable -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <title>Mind Brother</title>
+    <style>
+      /* Cross-platform Safe Area Support (iOS, Android, Tablets) */
+      :root {
+        /* Native safe area insets - works on iOS and modern Android */
+        --safe-area-inset-top: env(safe-area-inset-top, 0px);
+        --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+        --safe-area-inset-left: env(safe-area-inset-left, 0px);
+        --safe-area-inset-right: env(safe-area-inset-right, 0px);
+        
+        /* Fallback values for older Android devices */
+        --fallback-status-bar-height: 24px;
+        --fallback-nav-bar-height: 48px;
+        
+        /* Tablet-specific adjustments */
+        --tablet-horizontal-padding: 0px;
+      }
+      
+      /* Detect tablets and add horizontal padding */
+      @media (min-width: 768px) {
+        :root {
+          --tablet-horizontal-padding: 24px;
+        }
+      }
+      
+      @media (min-width: 1024px) {
+        :root {
+          --tablet-horizontal-padding: 48px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

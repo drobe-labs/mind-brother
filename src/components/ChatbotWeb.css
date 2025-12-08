@@ -1,0 +1,275 @@
+/* ChatbotWeb.css - Voice and UI feedback for Amani chatbot */
+
+/* Voice indicator when Amani is speaking */
+.chatbot-voice-indicator {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Voice wave animation */
+.chatbot-voice-wave {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.chatbot-voice-wave span {
+  width: 3px;
+  height: 16px;
+  background: linear-gradient(to top, #667eea, #764ba2);
+  border-radius: 2px;
+  animation: amaniWave 0.6s infinite ease-in-out;
+}
+
+.chatbot-voice-wave span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.chatbot-voice-wave span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.chatbot-voice-wave span:nth-child(4) {
+  animation-delay: 0.45s;
+}
+
+@keyframes amaniWave {
+  0%, 100% { 
+    height: 8px;
+    opacity: 0.5;
+  }
+  50% { 
+    height: 24px;
+    opacity: 1;
+  }
+}
+
+/* Stop speaking button */
+.stop-speaking-btn {
+  background: rgba(239, 68, 68, 0.9);
+  border: none;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stop-speaking-btn:hover {
+  background: rgba(239, 68, 68, 1);
+  transform: scale(1.05);
+}
+
+.stop-speaking-btn:active {
+  transform: scale(0.95);
+}
+
+/* Typing indicator when Amani is generating response */
+.amani-typing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #f3f4f6;
+  border-radius: 16px;
+  margin: 8px 0;
+  width: fit-content;
+}
+
+.typing-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.typing-dots span {
+  width: 8px;
+  height: 8px;
+  background: #9ca3af;
+  border-radius: 50%;
+  animation: typingBounce 1.4s infinite ease-in-out;
+}
+
+.typing-dots span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typingBounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Message bubble with voice indicator */
+.message-bubble {
+  max-width: 80%;
+  padding: 12px 16px;
+  border-radius: 16px;
+  margin: 8px 0;
+  position: relative;
+  word-wrap: break-word;
+}
+
+.message-bubble.user {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  margin-left: auto;
+  border-bottom-right-radius: 4px;
+}
+
+.message-bubble.assistant {
+  background: #f3f4f6;
+  color: #1f2937;
+  border-bottom-left-radius: 4px;
+}
+
+.message-bubble.assistant.speaking {
+  background: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%);
+  border: 2px solid #667eea;
+  animation: pulseGlow 2s infinite ease-in-out;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 20px 5px rgba(102, 126, 234, 0.6);
+  }
+}
+
+/* Voice toggle button in chat header */
+.voice-toggle-btn {
+  background: transparent;
+  border: 2px solid #667eea;
+  color: #667eea;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.voice-toggle-btn.active {
+  background: #667eea;
+  color: white;
+}
+
+.voice-toggle-btn:hover {
+  transform: scale(1.05);
+}
+
+/* Amani avatar with audio indicator */
+.amani-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.amani-avatar.speaking::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 3px solid #667eea;
+  animation: speakingPulse 1.5s infinite ease-out;
+}
+
+@keyframes speakingPulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* Chat input disabled state when speaking */
+.chat-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f9fafb;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .chatbot-voice-indicator {
+    bottom: 70px;
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+  
+  .message-bubble {
+    max-width: 85%;
+  }
+  
+  .stop-speaking-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+}
+
+/* Accessibility - reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .chatbot-voice-wave span,
+  .typing-dots span,
+  .amani-avatar.speaking::after {
+    animation: none;
+  }
+  
+  .message-bubble.assistant.speaking {
+    animation: none;
+    border: 2px solid #667eea;
+  }
+}

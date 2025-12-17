@@ -348,7 +348,7 @@ app.post('/api/text-to-speech', async (req, res) => {
   }
 });
 
-// Claude API chat endpoint - ENHANCED with context tracking
+// ⭐ UPDATED: Claude API chat endpoint - NOW WITH WEB SEARCH SUPPORT
 app.post('/api/chat', async (req, res) => {
   try {
     const { 
@@ -356,7 +356,8 @@ app.post('/api/chat', async (req, res) => {
       conversationHistory, 
       systemPrompt,
       context = { topics: [], emotionalState: null, recentIntents: [] },
-      debug = false 
+      debug = false,
+      enableWebSearch = false  // ⭐ NEW: Web search parameter
     } = req.body;
     
     console.log('🤖 Claude API request received:', { 
@@ -364,7 +365,8 @@ app.post('/api/chat', async (req, res) => {
       historyLength: conversationHistory?.length || 0,
       hasSystemPrompt: !!systemPrompt,
       hasContext: !!context,
-      debugMode: debug
+      debugMode: debug,
+      webSearchEnabled: enableWebSearch  // ⭐ NEW: Log web search status
     });
     
     // Validate input
@@ -413,6 +415,28 @@ app.post('/api/chat', async (req, res) => {
     console.log('🔍 Detected intents:', intents);
     console.log('📝 Extracted topics:', topics);
     
+    // ⭐ NEW: Build tools array for web search
+    const tools = enableWebSearch ? [
+      {
+        name: "web_search",
+        description: "Search the web for current information about sports, news, entertainment, weather, and events",
+        input_schema: {
+          type: "object",
+          properties: {
+            query: {
+              type: "string",
+              description: "Search query (keep it concise, 1-6 words work best)"
+            }
+          },
+          required: ["query"]
+        }
+      }
+    ] : undefined;
+    
+    if (enableWebSearch) {
+      console.log('🔍 Web search enabled for this request');
+    }
+    
     console.log('🧠 Calling Claude API...');
     const startTime = Date.now();
     
@@ -420,24 +444,40 @@ app.post('/api/chat', async (req, res) => {
     const promptSize = systemPrompt ? systemPrompt.length : 0;
     console.log(`📏 System prompt size: ${promptSize} characters (${Math.round(promptSize/4)} estimated tokens)`);
     
-    // Call Claude API
+    // ⭐ UPDATED: Call Claude API with optional web search tool
     const claudeResponse = await anthropic.messages.create({
-      model: 'claude-sonnet-4-5-20250929', // Claude Sonnet 4.5 (latest model)
+      model: 'claude-sonnet-4-20250514', // ⭐ UPDATED: Using Claude Sonnet 4 (supports web search)
       max_tokens: 1000,
       system: systemPrompt || 'You are a helpful AI assistant.',
-      messages: messages
+      messages: messages,
+      ...(tools && { tools })  // ⭐ NEW: Only include tools if web search is enabled
     });
     
     const claudeTime = Date.now() - startTime;
     console.log(`⏱️ Claude API took ${claudeTime}ms (${(claudeTime/1000).toFixed(2)}s)`);
     
-    let responseText = claudeResponse.content[0].text;
+    // ⭐ NEW: Handle tool use (web search results)
+    let responseText = '';
+    let usedWebSearch = false;
+    
+    for (const block of claudeResponse.content) {
+      if (block.type === 'text') {
+        responseText += block.text;
+      } else if (block.type === 'tool_use') {
+        usedWebSearch = true;
+        console.log(`🔍 Claude used web search: ${block.name} with query: "${block.input.query}"`);
+      }
+    }
+    
     let totalUsage = {
       input_tokens: claudeResponse.usage.input_tokens,
       output_tokens: claudeResponse.usage.output_tokens
     };
     
     console.log('✅ Claude response generated:', responseText.substring(0, 100) + '...');
+    if (usedWebSearch) {
+      console.log('✅ Web search was used in this response');
+    }
     
     // ENHANCED: Update context for next message
     const updatedContext = updateContext({ ...context }, userMessage, intents);
@@ -460,13 +500,17 @@ app.post('/api/chat', async (req, res) => {
       ];
 
       const correctedResponse = await anthropic.messages.create({
-        model: 'claude-sonnet-4-5-20250929',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
         system: systemPrompt || 'You are a helpful AI assistant.',
-        messages: correctionMessages
+        messages: correctionMessages,
+        ...(tools && { tools })  // ⭐ NEW: Include tools in correction too
       });
 
-      responseText = correctedResponse.content[0].text;
+      responseText = correctedResponse.content
+        .filter(block => block.type === 'text')
+        .map(block => block.text)
+        .join('');
       
       // Add correction tokens to usage
       totalUsage.input_tokens += correctedResponse.usage.input_tokens;
@@ -479,11 +523,12 @@ app.post('/api/chat', async (req, res) => {
     const responseData = {
       success: true,
       response: responseText,
-      context: updatedContext, // ENHANCED: Return updated context for next message
+      context: updatedContext,
       metadata: {
         intents,
         topics,
-        validation
+        validation,
+        usedWebSearch  // ⭐ NEW: Indicate if web search was used
       },
       usage: totalUsage
     };
@@ -495,7 +540,9 @@ app.post('/api/chat', async (req, res) => {
         validatedIntents: intents,
         extractedTopics: topics,
         contextBefore: context,
-        contextAfter: updatedContext
+        contextAfter: updatedContext,
+        webSearchEnabled: enableWebSearch,
+        webSearchUsed: usedWebSearch
       };
       console.log('🐛 Debug info included in response');
     }
@@ -813,17 +860,19 @@ app.get('/api/health', (req, res) => {
     message: 'Backend API is running',
     elevenLabsConfigured: !!process.env.ELEVENLABS_API_KEY,
     anthropicConfigured: !!process.env.ANTHROPIC_API_KEY,
-    supabaseConfigured: !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)
+    supabaseConfigured: !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY),
+    webSearchSupport: true  // ⭐ NEW: Indicate web search is supported
   });
 });
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`🔊 Text-to-speech endpoint: http://localhost:${PORT}/api/text-to-speech`);
-  console.log(`🤖 Claude chat endpoint: http://localhost:${PORT}/api/chat`);
-  console.log(`🧪 Intent testing endpoint: http://localhost:${PORT}/api/test-intent`);
-  console.log(`❤️  Health check: http://localhost:${PORT}/api/health`);
+  console.log(`🚀 Server running on http://mind-brother-production.up.railway.app:${PORT}`);
+  console.log(`🔊 Text-to-speech endpoint: http://mind-brother-production.up.railway.app:${PORT}/api/text-to-speech`);
+  console.log(`🤖 Claude chat endpoint: http://mind-brother-production.up.railway.app:${PORT}/api/chat`);
+  console.log(`🔍 Web search support: ✅ Enabled (Claude Sonnet 4)`);  // ⭐ NEW
+  console.log(`🧪 Intent testing endpoint: http://mind-brother-production.up.railway.app:${PORT}/api/test-intent`);
+  console.log(`❤️  Health check: http://mind-brother-production.up.railway.app:${PORT}/api/health`);
   console.log(`📋 ElevenLabs API Key configured: ${!!process.env.ELEVENLABS_API_KEY ? '✅ Yes' : '❌ No - Please set in .env'}`);
   console.log(`🧠 Anthropic API Key configured: ${!!process.env.ANTHROPIC_API_KEY ? '✅ Yes' : '❌ No - Please set in .env'}`);
   console.log(`🗄️  Supabase configured: ${!!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) ? '✅ Yes' : '❌ No - Please set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env'}`);

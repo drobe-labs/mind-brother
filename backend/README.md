@@ -22,7 +22,7 @@ This is a backend proxy server that handles Anthropic API calls securely, keepin
    npm run dev
    ```
 
-The server will run on `http://localhost:3001`
+The server will run on `http://mind-brother-production.up.railway.app:3001`
 
 ## API Endpoints
 

@@ -19,7 +19,7 @@ NC='\033[0m' # No Color
 
 # Check if backend is running
 echo "🔍 Checking backend status..."
-if curl -s http://localhost:3001/health > /dev/null 2>&1; then
+if curl -s http://mind-brother-production.up.railway.app:3001/health > /dev/null 2>&1; then
     echo -e "${GREEN}✅ Backend is running${NC}"
 else
     echo -e "${RED}❌ Backend is not running!${NC}"

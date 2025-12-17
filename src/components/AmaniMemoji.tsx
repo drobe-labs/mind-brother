@@ -9,7 +9,7 @@ const AmaniMemoji = ({
   expression = 'neutral',
   animated = true 
 }: {
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | 'hero';
   expression?: string;
   animated?: boolean;
 }) => {
@@ -21,7 +21,11 @@ const AmaniMemoji = ({
     sm: 'w-16 h-16',   // 64px
     md: 'w-20 h-20',   // 80px - Perfect for mood check-in
     lg: 'w-28 h-28',   // 112px
-    xl: 'w-36 h-36'    // 144px
+    xl: 'w-36 h-36',   // 144px
+    '2xl': 'w-48 h-48', // 192px
+    '3xl': 'w-64 h-64', // 256px
+    '4xl': 'w-80 h-80', // 320px - Extra large hero
+    'hero': 'w-96 h-96' // 384px - Maximum hero size
   };
 
   // Map expressions to actual file names in /public/ folder

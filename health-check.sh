@@ -280,8 +280,8 @@ echo -e "${INFO} Waiting for backend to be ready..."
 # Wait for backend to start (max 10 seconds)
 for i in {1..20}; do
     sleep 0.5
-    if curl -s http://localhost:3001/health > /dev/null 2>&1; then
-        echo -e "${CHECK} ${GREEN}Backend is running on http://localhost:3001${NC}"
+    if curl -s http://mind-brother-production.up.railway.app:3001/health > /dev/null 2>&1; then
+        echo -e "${CHECK} ${GREEN}Backend is running on http://mind-brother-production.up.railway.app:3001${NC}"
         echo -e "${CHECK} ${GREEN}Backend accessible at http://${COMPUTER_IP}:3001${NC}"
         break
     fi
@@ -304,7 +304,7 @@ echo ""
 echo -e "${TEST} ${YELLOW}Testing backend endpoints...${NC}"
 
 # Test health endpoint
-HEALTH_STATUS=$(curl -s http://localhost:3001/health)
+HEALTH_STATUS=$(curl -s http://mind-brother-production.up.railway.app:3001/health)
 if [ "$HEALTH_STATUS" == "OK" ]; then
     echo -e "${CHECK} ${GREEN}/health endpoint: Working${NC}"
 else
@@ -312,7 +312,7 @@ else
 fi
 
 # Test chat endpoint
-CHAT_TEST=$(curl -s -X POST http://localhost:3001/api/chat \
+CHAT_TEST=$(curl -s -X POST http://mind-brother-production.up.railway.app:3001/api/chat \
     -H "Content-Type: application/json" \
     -d '{"userMessage": "test", "conversationHistory": [], "systemPrompt": "Reply with OK"}' \
     | grep -o '"success":true' || echo "failed")
@@ -340,7 +340,7 @@ echo -e "${INFO} Waiting for frontend to be ready..."
 # Wait for frontend to start (max 15 seconds)
 for i in {1..30}; do
     sleep 0.5
-    if curl -s http://localhost:5173 > /dev/null 2>&1; then
+    if curl -s http://mind-brother-production.up.railway.app:5173 > /dev/null 2>&1; then
         echo -e "${CHECK} ${GREEN}Frontend is running!${NC}"
         break
     fi
@@ -363,11 +363,11 @@ echo -e "${GREEN}${CHECK} Setup Complete!${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 echo -e "${INFO} ${BLUE}Access your app:${NC}"
-echo -e "   ${GREEN}Desktop:${NC}  http://localhost:5173"
+echo -e "   ${GREEN}Desktop:${NC}  http://mind-brother-production.up.railway.app:5173"
 echo -e "   ${GREEN}Mobile:${NC}   http://${COMPUTER_IP}:5173"
 echo ""
 echo -e "${INFO} ${BLUE}Backend API:${NC}"
-echo -e "   ${GREEN}Local:${NC}    http://localhost:3001"
+echo -e "   ${GREEN}Local:${NC}    http://mind-brother-production.up.railway.app:3001"
 echo -e "   ${GREEN}Network:${NC}  http://${COMPUTER_IP}:3001"
 echo ""
 echo -e "${INFO} ${BLUE}Process IDs:${NC}"

@@ -17,11 +17,11 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    host: 'localhost', // Use localhost to avoid network issues
+    host: 'mind-brother-production.up.railway.app', // Use mind-brother-production.up.railway.app to avoid network issues
     strictPort: false, // Allow port switching if 5173 is taken
     hmr: {
       protocol: 'ws',
-      host: 'localhost',
+      host: 'mind-brother-production.up.railway.app',
       clientPort: 5173,
     },
     watch: {

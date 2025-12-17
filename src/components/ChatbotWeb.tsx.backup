@@ -202,8 +202,8 @@ export default function ChatbotWeb({ user, profile, onNavigateToBreathing, onNav
         
         // Try backend server as fallback before browser TTS
         try {
-          const backendUrl = window.location.hostname === 'localhost' 
-            ? 'http://localhost:3001' 
+          const backendUrl = window.location.hostname === 'mind-brother-production.up.railway.app' 
+            ? 'http://mind-brother-production.up.railway.app:3001' 
             : `http://${window.location.hostname}:3001`;
           
           console.log('🔄 Trying backend TTS fallback:', `${backendUrl}/api/text-to-speech`);

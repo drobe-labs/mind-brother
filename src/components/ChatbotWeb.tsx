@@ -147,7 +147,7 @@ export default function ChatbotWeb({ user, profile, onNavigateToBreathing, onNav
       // For Capacitor apps, use the configured backend URL or Mac's IP for device testing
       const isCapacitor = window.location.protocol === 'capacitor:';
       const backendUrl = import.meta.env.VITE_BACKEND_URL 
-        || (isCapacitor ? 'http://192.0.0.3:3001' : 'http://localhost:3001');
+        || 'https://mind-brother-production.up.railway.app';
       
       console.log('🎤 Calling ElevenLabs via backend...');
       
@@ -193,23 +193,85 @@ export default function ChatbotWeb({ user, profile, onNavigateToBreathing, onNav
     }
   };
 
-  // Queue for pending audio - we'll play after user interacts again
-  const [pendingAudio, setPendingAudio] = useState<string | null>(null);
+  // Reference to keep Audio object alive for autoplay
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   
-  // Speak message using ElevenLabs - queues audio, plays on next interaction
-  const speakMessage = async (text: string) => {
+  // Auto-play message using ElevenLabs - called directly after response
+  const autoPlayMessage = async (text: string) => {
     if (!voiceEnabled) return;
     
-    // Queue the text - it will play when user next interacts
-    setPendingAudio(text);
-  };
-  
-  // Play pending audio when user clicks anywhere in chat area
-  const handleChatAreaClick = async () => {
-    if (pendingAudio && voiceEnabled) {
-      const textToPlay = pendingAudio;
-      setPendingAudio(null);
-      await playMessageAudio(textToPlay);
+    // Clean text for better speech
+    const cleanText = text
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/\n\n/g, '. ')
+      .replace(/\n/g, ' ')
+      .trim();
+    
+    setIsVoicePlaying(true);
+    
+    try {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL 
+        || 'https://mind-brother-production.up.railway.app';
+      
+      console.log('🎤 Auto-playing ElevenLabs voice...');
+      
+      const response = await fetch(`${backendUrl}/api/text-to-speech`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: cleanText,
+          voice_id: '1YBpxMFAafA83t7u1xof' // Amani voice
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`TTS failed: ${response.status}`);
+      }
+
+      const audioBlob = await response.blob();
+      
+      if (audioBlob.size === 0) {
+        throw new Error('Audio blob is empty');
+      }
+
+      const audioUrl = URL.createObjectURL(audioBlob);
+      
+      // Stop any existing audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+      
+      audio.onended = () => {
+        URL.revokeObjectURL(audioUrl);
+        setIsVoicePlaying(false);
+        audioRef.current = null;
+      };
+
+      audio.onerror = (e) => {
+        console.error('Audio playback error:', e);
+        URL.revokeObjectURL(audioUrl);
+        setIsVoicePlaying(false);
+        audioRef.current = null;
+      };
+
+      // Try to play - this should work since we're in async chain from user gesture
+      try {
+        await audio.play();
+        console.log('🔊 Auto-playing ElevenLabs audio');
+      } catch (playError: any) {
+        // If autoplay fails, show a subtle indicator that audio is ready
+        console.warn('Autoplay blocked, user needs to tap:', playError.message);
+        setIsVoicePlaying(false);
+      }
+      
+    } catch (error) {
+      console.error('❌ ElevenLabs TTS failed:', error);
+      setIsVoicePlaying(false);
     }
   };
 
@@ -354,7 +416,7 @@ export default function ChatbotWeb({ user, profile, onNavigateToBreathing, onNav
         }
         
         if (voiceEnabled) {
-          speakMessage(breathingResponse.content);
+          autoPlayMessage(breathingResponse.content);
         }
         
         return;
@@ -405,7 +467,7 @@ export default function ChatbotWeb({ user, profile, onNavigateToBreathing, onNav
         }
         
         if (voiceEnabled) {
-          speakMessage(workoutResponse.content);
+          autoPlayMessage(workoutResponse.content);
         }
         
         return;
@@ -451,7 +513,7 @@ export default function ChatbotWeb({ user, profile, onNavigateToBreathing, onNav
       }
       
       if (voiceEnabled) {
-        speakMessage(response);
+        autoPlayMessage(response);
       }
 
     } catch (error) {
@@ -521,14 +583,18 @@ export default function ChatbotWeb({ user, profile, onNavigateToBreathing, onNav
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-4" onClick={handleChatAreaClick}>
-        {/* Audio ready indicator */}
-        {pendingAudio && voiceEnabled && (
-          <div className="fixed top-20 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 animate-pulse cursor-pointer z-50">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-            </svg>
-            Tap to hear Amani
+      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        {/* Voice playing indicator */}
+        {isVoicePlaying && voiceEnabled && (
+          <div className="fixed top-20 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 z-50">
+            <div className="flex gap-1">
+              <div className="w-1 h-3 bg-white rounded animate-pulse" style={{ animationDelay: '0ms' }}></div>
+              <div className="w-1 h-4 bg-white rounded animate-pulse" style={{ animationDelay: '150ms' }}></div>
+              <div className="w-1 h-2 bg-white rounded animate-pulse" style={{ animationDelay: '300ms' }}></div>
+              <div className="w-1 h-5 bg-white rounded animate-pulse" style={{ animationDelay: '450ms' }}></div>
+              <div className="w-1 h-3 bg-white rounded animate-pulse" style={{ animationDelay: '600ms' }}></div>
+            </div>
+            Amani is speaking...
           </div>
         )}
         

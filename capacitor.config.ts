@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     // For development: uncomment to use local dev server
-    // url: 'http://localhost:5173',
+    // url: 'http://mind-brother-production.up.railway.app:5173',
     // cleartext: true
     
     // For production: use your production backend URL

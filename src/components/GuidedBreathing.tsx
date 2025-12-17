@@ -138,18 +138,27 @@ const GuidedBreathing = ({ initialExercise }: GuidedBreathingProps) => {
   const isRunningRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+  const isMountedRef = useRef(true); // Track if component is mounted
 
   // Cleanup function to stop all audio
   const stopAllAudio = () => {
+    console.log('🛑 GuidedBreathing: Stopping all audio...');
+    
     // Stop any playing audio element
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
+      currentAudioRef.current.currentTime = 0;
       currentAudioRef.current.src = '';
       currentAudioRef.current = null;
     }
     
-    // Cancel speech synthesis
-    if (speechSynthRef.current) {
+    // Cancel browser speech synthesis
+    if (window.speechSynthesis && window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+    }
+    
+    // Also cancel via ref
+    if (speechSynthRef.current && speechSynthRef.current.speaking) {
       speechSynthRef.current.cancel();
     }
     
@@ -163,6 +172,8 @@ const GuidedBreathing = ({ initialExercise }: GuidedBreathingProps) => {
   };
 
   useEffect(() => {
+    isMountedRef.current = true;
+    
     if (window.speechSynthesis) {
       speechSynthRef.current = window.speechSynthesis;
     }
@@ -176,48 +187,84 @@ const GuidedBreathing = ({ initialExercise }: GuidedBreathingProps) => {
     
     // Cleanup when component unmounts
     return () => {
+      console.log('🧹 GuidedBreathing unmounting - cleaning up audio');
+      isMountedRef.current = false;
       stopAllAudio();
     };
   }, [initialExercise]);
 
-  // Generate speech with ElevenLabs
+  // Generate speech via backend proxy
   const generateSpeech = async (text: string): Promise<Blob> => {
-    const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
-    
-    if (!apiKey) {
-      throw new Error('ElevenLabs API key not configured');
-    }
-
-    const voiceId = '1YBpxMFAafA83t7u1xof';
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://mind-brother-production.up.railway.app';
     
     abortControllerRef.current = new AbortController();
     
-    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+    const response = await fetch(`${backendUrl}/api/text-to-speech`, {
       method: 'POST',
       headers: {
-        'Accept': 'audio/mpeg',
         'Content-Type': 'application/json',
-        'xi-api-key': apiKey,
       },
       body: JSON.stringify({
         text: text,
-        model_id: 'eleven_turbo_v2_5',
-        voice_settings: {
-          stability: 0.6,
-          similarity_boost: 0.75,
-        },
+        voice_id: '1YBpxMFAafA83t7u1xof'
       }),
       signal: abortControllerRef.current.signal
     });
 
     if (!response.ok) {
-      throw new Error(`ElevenLabs API failed: ${response.status}`);
+      throw new Error(`TTS API failed: ${response.status}`);
     }
 
     return await response.blob();
   };
 
+  // Pre-cache all breathing cues for instant playback
+  const [isPreloading, setIsPreloading] = useState(false);
+  
+  const precacheBreathingCues = async (): Promise<boolean> => {
+    const cuesToCache = [
+      { text: "Let's begin. Find a comfortable position and relax your shoulders.", key: 'intro' },
+      { text: 'Breathe in', key: 'inhale' },
+      { text: 'Hold', key: 'hold' },
+      { text: 'Breathe out', key: 'exhale' },
+      { text: 'Exercise complete. You did great.', key: 'complete' }
+    ];
+
+    console.log('🔄 Pre-caching breathing voice cues...');
+    setIsPreloading(true);
+
+    try {
+      // Fetch all audio in parallel for faster loading
+      const results = await Promise.allSettled(
+        cuesToCache.map(async ({ text, key }) => {
+          if (!audioCache.current.has(key)) {
+            const blob = await generateSpeech(text);
+            audioCache.current.set(key, blob);
+            console.log(`✅ Cached: ${key}`);
+          }
+        })
+      );
+
+      const failures = results.filter(r => r.status === 'rejected');
+      if (failures.length > 0) {
+        console.warn(`⚠️ ${failures.length} cues failed to cache, will use browser speech`);
+      }
+
+      setIsPreloading(false);
+      return failures.length < cuesToCache.length; // Success if at least some cached
+    } catch (error) {
+      console.error('❌ Pre-cache failed:', error);
+      setIsPreloading(false);
+      return false;
+    }
+  };
+
   const playAudioBlob = async (blob: Blob): Promise<void> => {
+    // Don't play if component is unmounted
+    if (!isMountedRef.current) {
+      return Promise.resolve();
+    }
+    
     return new Promise<void>((resolve, reject) => {
       const audioUrl = URL.createObjectURL(blob);
       const audio = new Audio(audioUrl);
@@ -227,36 +274,74 @@ const GuidedBreathing = ({ initialExercise }: GuidedBreathingProps) => {
       
       audio.onended = () => {
         URL.revokeObjectURL(audioUrl);
-        currentAudioRef.current = null;
+        if (currentAudioRef.current === audio) {
+          currentAudioRef.current = null;
+        }
         setIsSpeaking(false);
         resolve();
       };
       
       audio.onerror = (error) => {
         URL.revokeObjectURL(audioUrl);
-        currentAudioRef.current = null;
+        if (currentAudioRef.current === audio) {
+          currentAudioRef.current = null;
+        }
         setIsSpeaking(false);
         reject(error);
       };
       
-      audio.play().catch(reject);
+      // Final check before playing
+      if (!isMountedRef.current) {
+        URL.revokeObjectURL(audioUrl);
+        resolve();
+        return;
+      }
+      
+      audio.play().catch(error => {
+        URL.revokeObjectURL(audioUrl);
+        if (currentAudioRef.current === audio) {
+          currentAudioRef.current = null;
+        }
+        setIsSpeaking(false);
+        reject(error);
+      });
     });
   };
 
   const speakWithBrowser = async (text: string): Promise<void> => {
+    // Don't speak if component is unmounted
+    if (!isMountedRef.current) return;
+    
     return new Promise<void>((resolve, reject) => {
-      if (!speechSynthRef.current) {
+      const synth = speechSynthRef.current || window.speechSynthesis;
+      
+      if (!synth) {
         reject(new Error('Speech synthesis not available'));
         return;
       }
 
-      if (speechSynthRef.current.speaking) {
-        speechSynthRef.current.cancel();
+      if (synth.speaking) {
+        synth.cancel();
       }
 
       const utterance = new SpeechSynthesisUtterance(text);
+      
+      // Try to select a male voice for consistency
+      const voices = synth.getVoices();
+      const maleVoice = voices.find(voice => 
+        voice.name.includes('Male') || 
+        voice.name.includes('David') ||
+        voice.name.includes('Daniel') ||
+        voice.name.includes('James')
+      );
+      
+      if (maleVoice) {
+        utterance.voice = maleVoice;
+      } else {
+        utterance.pitch = 0.85; // Lower pitch if no male voice
+      }
+      
       utterance.rate = 0.85;
-      utterance.pitch = 1.0;
       utterance.volume = 1.0;
 
       utterance.onend = () => {
@@ -269,23 +354,35 @@ const GuidedBreathing = ({ initialExercise }: GuidedBreathingProps) => {
         reject();
       };
 
-      speechSynthRef.current.speak(utterance);
+      synth.speak(utterance);
     });
   };
 
   const speak = async (text: string, cacheKey?: string): Promise<void> => {
-    if (!voiceEnabled || !isRunningRef.current) return;
+    // Don't speak if unmounted, voice disabled, or not running
+    if (!isMountedRef.current || !voiceEnabled || !isRunningRef.current) return;
 
     setIsSpeaking(true);
 
     try {
       if (cacheKey && audioCache.current.has(cacheKey)) {
         const cachedBlob = audioCache.current.get(cacheKey)!;
+        // Check mounted before playing
+        if (!isMountedRef.current) {
+          setIsSpeaking(false);
+          return;
+        }
         await playAudioBlob(cachedBlob);
         return;
       }
 
       const audioBlob = await generateSpeech(text);
+      
+      // Check if still mounted after fetch
+      if (!isMountedRef.current) {
+        setIsSpeaking(false);
+        return;
+      }
       
       if (cacheKey) {
         audioCache.current.set(cacheKey, audioBlob);
@@ -295,6 +392,13 @@ const GuidedBreathing = ({ initialExercise }: GuidedBreathingProps) => {
       
     } catch (error) {
       console.error('❌ ElevenLabs failed:', error);
+      
+      // Only fallback if still mounted
+      if (!isMountedRef.current) {
+        setIsSpeaking(false);
+        return;
+      }
+      
       try {
         await speakWithBrowser(text);
       } catch {
@@ -353,6 +457,11 @@ const GuidedBreathing = ({ initialExercise }: GuidedBreathingProps) => {
     setCurrentCycle(1);
     setPhase('idle');
     
+    // Pre-cache all voice cues for instant playback (prevents sync issues)
+    if (voiceEnabled) {
+      await precacheBreathingCues();
+    }
+    
     // Intro - wait for this one
     await speak("Let's begin. Find a comfortable position and relax your shoulders.", 'intro');
     await delay(1500);
@@ -362,9 +471,10 @@ const GuidedBreathing = ({ initialExercise }: GuidedBreathingProps) => {
       
       setCurrentCycle(cycle);
       
-      // INHALE - speak and start timer simultaneously
+      // INHALE - speak first, small delay, then timer (better sync on mobile)
       setPhase('inhale');
       speakAsync('Breathe in', 'inhale');
+      await delay(200); // Allow audio to start before timer
       await runTimer(selectedTechnique.inhale);
       
       if (!isRunningRef.current) break;
@@ -373,6 +483,7 @@ const GuidedBreathing = ({ initialExercise }: GuidedBreathingProps) => {
       if (selectedTechnique.hold > 0) {
         setPhase('hold');
         speakAsync('Hold', 'hold');
+        await delay(200);
         await runTimer(selectedTechnique.hold);
       }
       
@@ -381,6 +492,7 @@ const GuidedBreathing = ({ initialExercise }: GuidedBreathingProps) => {
       // EXHALE
       setPhase('exhale');
       speakAsync('Breathe out', 'exhale');
+      await delay(200);
       await runTimer(selectedTechnique.exhale);
       
       if (!isRunningRef.current) break;
@@ -439,14 +551,14 @@ const GuidedBreathing = ({ initialExercise }: GuidedBreathingProps) => {
         style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #4470AD 50%, #233C67 100%)' }}
       >
         <div className="max-w-lg mx-auto tablet-max-width">
-          {/* Header */}
-          <div className="text-center mb-6 pt-4">
-            <div className="inline-block mb-3">
-              <AmaniMemoji expression="needGrounding" size="xl" />
+          {/* Header - Compact layout with text directly under memoji */}
+          <div className="text-center mb-1 pt-0">
+            <div className="inline-block">
+              <AmaniMemoji expression="needGrounding" size="hero" />
             </div>
-            <h1 className="text-2xl font-bold text-white mb-1">Guided Breathing</h1>
+            <h1 className="text-2xl font-bold text-white mb-0">Guided Breathing</h1>
             <p 
-              className="text-3xl text-red-500 mb-2 tracking-wider"
+              className="text-3xl text-red-500 mb-0 tracking-wider"
               style={{ 
                 fontFamily: "'Creepster', cursive",
                 textShadow: '2px 2px 4px rgba(0,0,0,0.5), 0 0 10px rgba(255,0,0,0.3)'
@@ -454,11 +566,11 @@ const GuidedBreathing = ({ initialExercise }: GuidedBreathingProps) => {
             >
               DON'T CRASH OUT!
             </p>
-            <p className="text-white/60 text-sm">What do you need help with?</p>
+            <p className="text-white/60 text-sm mb-2">What do you need help with?</p>
           </div>
 
           {/* Voice Toggle */}
-          <div className="flex items-center justify-between bg-white/10 backdrop-blur rounded-xl p-3 mb-5">
+          <div className="flex items-center justify-between bg-white/10 backdrop-blur rounded-xl p-3 mb-3">
             <div className="flex items-center gap-2">
               {voiceEnabled ? <Volume2 className="text-white/80" size={18} /> : <VolumeX className="text-white/40" size={18} />}
               <span className="text-white/80 text-sm font-medium">Voice Guidance</span>
@@ -492,14 +604,14 @@ const GuidedBreathing = ({ initialExercise }: GuidedBreathingProps) => {
                   <AmaniMemoji expression={technique.memoji} size="lg" />
                 </div>
                 
-                {/* Name */}
-                <h3 className="font-semibold text-white text-sm leading-tight mb-1">
-                  {technique.shortName}
-                </h3>
-                
-                {/* Helps with */}
-                <p className="text-white/60 text-xs">
+                {/* Helps with (now first) */}
+                <p className="font-semibold text-white text-sm leading-tight mb-1">
                   {technique.helpsWith}
+                </p>
+                
+                {/* Name (now second) */}
+                <p className="text-white/50 text-xs">
+                  {technique.shortName}
                 </p>
                 
                 {/* Selected indicator */}
@@ -528,10 +640,20 @@ const GuidedBreathing = ({ initialExercise }: GuidedBreathingProps) => {
           {/* Start Button */}
           <button
             onClick={startBreathing}
-            className="w-full mt-4 py-4 rounded-2xl font-bold text-lg shadow-lg transition-all flex items-center justify-center gap-3 bg-white text-[#233C67] hover:bg-white/90 hover:scale-[1.02]"
+            disabled={isPreloading}
+            className="w-full mt-4 py-4 rounded-2xl font-bold text-lg shadow-lg transition-all flex items-center justify-center gap-3 bg-white text-[#233C67] hover:bg-white/90 hover:scale-[1.02] disabled:opacity-70 disabled:cursor-wait"
           >
-            <Wind size={22} />
-            Start Breathing
+            {isPreloading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-[#233C67] border-t-transparent rounded-full animate-spin" />
+                Preparing Voice...
+              </>
+            ) : (
+              <>
+                <Wind size={22} />
+                Start Breathing
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -546,14 +668,23 @@ const GuidedBreathing = ({ initialExercise }: GuidedBreathingProps) => {
         style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #233C67 50%, #1a1a2e 100%)' }}
       >
         {/* Voice indicator */}
-        {isSpeaking && (
+        {(isSpeaking || isPreloading) && (
           <div className="breathing-voice-indicator" style={{ background: 'rgba(68, 112, 173, 0.95)' }}>
-            <div className="breathing-voice-wave">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-            <span>Amani speaking...</span>
+            {isPreloading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Loading voice...</span>
+              </>
+            ) : (
+              <>
+                <div className="breathing-voice-wave">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+                <span>Amani speaking...</span>
+              </>
+            )}
           </div>
         )}
 

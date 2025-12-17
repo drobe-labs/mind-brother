@@ -45,12 +45,12 @@ echo ""
 echo "⏳ Waiting for server to start..."
 for i in {1..20}; do
     sleep 0.5
-    if curl -s http://localhost:5173 > /dev/null 2>&1; then
+    if curl -s http://mind-brother-production.up.railway.app:5173 > /dev/null 2>&1; then
         echo "✅ Dev server is running!"
         echo ""
         echo "🎉 Fix complete! Try the breathing exercises now."
         echo ""
-        echo "   Open: http://localhost:5173"
+        echo "   Open: http://mind-brother-production.up.railway.app:5173"
         exit 0
     fi
 done

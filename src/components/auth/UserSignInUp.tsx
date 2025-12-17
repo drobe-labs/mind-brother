@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Mail, Lock, User, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, ArrowLeft, AtSign } from 'lucide-react';
 import type { UserSignupData, SignInData } from '../../types/auth.types';
 import { handlePasswordReset } from '../../lib/authHandlers';
 
@@ -355,6 +355,27 @@ export default function UserSignInUp({ onSignIn, onSignUp }: UserSignInUpProps) 
             <p className="text-white/40 text-xs mt-1">At least 8 characters</p>
           </div>
 
+          {/* Display Handle (for anonymity in community) */}
+          <div>
+            <label className="block text-white/80 text-sm font-medium mb-2">
+              Display Handle <span className="text-white/40">(optional)</span>
+            </label>
+            <div className="relative">
+              <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" size={20} />
+              <input
+                type="text"
+                value={signUpData.username}
+                onChange={(e) => setSignUpData({ ...signUpData, username: e.target.value.replace(/\s/g, '').toLowerCase() })}
+                className="w-full bg-white/5 border border-white/10 rounded-lg py-3 pl-11 pr-4 text-white placeholder-white/40 focus:outline-none focus:border-blue-500"
+                placeholder="anonymous_warrior"
+                maxLength={20}
+              />
+            </div>
+            <p className="text-white/40 text-xs mt-1">
+              🔒 This name will show in Community discussions instead of your real name
+            </p>
+          </div>
+
           {/* Age Range */}
           <div>
             <label className="block text-white/80 text-sm font-medium mb-2">
@@ -400,7 +421,7 @@ export default function UserSignInUp({ onSignIn, onSignUp }: UserSignInUpProps) 
           </button>
 
           <p className="text-center text-white/50 text-xs">
-            Optional: You can add username and phone number later in your profile
+            You can update your display handle anytime in your profile settings
           </p>
         </form>
       )}

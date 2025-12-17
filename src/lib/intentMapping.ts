@@ -120,6 +120,13 @@ export const intentCategories: IntentCategory[] = [
         "i feel empty inside",
         "i'm just going through the motions",
         "everything feels hopeless",
+        "i feel hopeless",
+        "there's no hope",
+        "i've lost all hope",
+        "things will never get better",
+        "nothing will change",
+        "i'm trapped",
+        "there's no way out",
         "i used to enjoy",
         "don't care anymore",
         "depressed"
@@ -328,7 +335,325 @@ export const intentCategories: IntentCategory[] = [
     }
   },
 
-  // CATEGORY 5: TRAUMA & PTSD
+  // ===== NEW TRAUMA CATEGORIES (5A, 5B, 5C) =====
+  
+  // NEW: CATEGORY 5A: TRAUMA DISCLOSURE (GENERAL)
+  {
+    id: 'trauma_disclosure',
+    name: 'Trauma Disclosure',
+    priority: 'urgent',
+    triggerPhrases: {
+      direct: [
+        "i saw someone die",
+        "i saw someone get killed",
+        "i saw someone get shot",
+        "i saw someone get stabbed",
+        "i witnessed a murder",
+        "i witnessed someone die",
+        "i was beaten",
+        "i was abused",
+        "my father beat me",
+        "my mother beat me",
+        "i was hit as a child",
+        "i held them while they died",
+        "i found the body",
+        "i tried to save them",
+        "there was too much blood",
+        "i watched them die",
+        "i couldn't save them",
+        "someone hurt me when i was young",
+        "i was attacked",
+        "i got jumped",
+        "i've been assaulted"
+      ],
+      indirect: [
+        "something happened to me when i was a kid",
+        "someone did something to me",
+        "i've never told anyone this before",
+        "i saw things i shouldn't have seen",
+        "i had to watch",
+        "i was there when it happened",
+        "i grew up seeing violence",
+        "home wasn't safe",
+        "there was no one to protect me",
+        "i've been to too many funerals",
+        "i lost someone to violence",
+        "someone close to me was killed"
+      ],
+      emotional: [
+        "i feel guilty i couldn't stop it",
+        "i should have done something",
+        "i can't get the images out of my head",
+        "i keep seeing it happen",
+        "i feel dirty",
+        "i feel broken",
+        "i feel damaged",
+        "i can't trust anyone",
+        "i hate being touched",
+        "i'm scared all the time"
+      ],
+      physical: [
+        "i still have scars",
+        "my body remembers",
+        "i tense up when",
+        "i can't sleep without nightmares",
+        "i see it when i close my eyes",
+        "certain smells trigger me",
+        "i freeze when",
+        "my heart races when i remember"
+      ],
+      behavioral: [
+        "i avoid that area now",
+        "i can't go back there",
+        "i changed my route",
+        "i don't let anyone get close",
+        "i always need to know where exits are",
+        "i need my back to the wall",
+        "i can't be around",
+        "i have to check every room"
+      ]
+    },
+    kbReferences: {
+      primary: 'trauma_ptsd',
+      supporting: [
+        'crisis_intervention',
+        'cultural_considerations',
+        'depression',
+        'substance_use',
+        'therapy_resources',
+        'trauma_response_protocol'
+      ]
+    },
+    responseStrategy: {
+      validate: [
+        "Thank you for trusting me with this. What you just shared took incredible strength",
+        "What happened to you was not okay. You didn't deserve that",
+        "I believe you. What you experienced was real trauma",
+        "You're not alone in carrying this. Many men have experienced trauma and found ways to heal",
+        "The pain you're carrying is valid and real"
+      ],
+      context: [
+        "Acknowledge the courage it took to share",
+        "Explicitly state it wasn't their fault",
+        "Normalize trauma responses without pathologizing",
+        "Explain that trauma changes the nervous system",
+        "Provide hope that healing is possible",
+        "Differentiate between past trauma and current safety"
+      ],
+      actions: [
+        "Assess current safety: 'Are you safe right now?'",
+        "Ground in present moment if flashbacks occurring",
+        "Offer immediate grounding technique (5-4-3-2-1)",
+        "Explain trauma therapy options (EMDR, PE, CPT)",
+        "Recommend trauma-specialized therapist",
+        "Provide crisis resources if needed",
+        "Validate need for professional trauma treatment",
+        "Do NOT ask for details or press for more information"
+      ],
+      redFlags: [
+        "Combined with suicidal ideation → IMMEDIATE CRISIS",
+        "Trauma occurred within 72 hours → Medical attention/SAFE kit",
+        "Ongoing abuse → Safety planning needed",
+        "Substance use to cope → Address both trauma and addiction",
+        "Severe dissociation or detachment",
+        "Self-harm as coping mechanism",
+        "Expressing they 'deserved it' → Counter with validation",
+        "Minimizing ('it wasn't that bad') → Gently validate it WAS serious"
+      ]
+    }
+  },
+
+  // NEW: CATEGORY 5B: SEXUAL TRAUMA (Male Survivors)
+  {
+    id: 'sexual_trauma',
+    name: 'Sexual Trauma (Male Survivors)',
+    priority: 'urgent',
+    triggerPhrases: {
+      direct: [
+        "i was raped",
+        "i was sexually assaulted",
+        "i was molested",
+        "someone raped me",
+        "i was sexually abused as a child",
+        "someone touched me inappropriately",
+        "i was forced to",
+        "i said no but",
+        "i couldn't stop them",
+        "i was too drunk to stop it",
+        "i froze and couldn't move",
+        "he did things to me",
+        "she did things to me"
+      ],
+      indirect: [
+        "something sexual happened that i didn't want",
+        "i was pressured into",
+        "i didn't consent but",
+        "my body responded but i didn't want it",
+        "i got an erection even though",
+        "i'm confused about what happened",
+        "was it assault if",
+        "can men be raped",
+        "do men get sexually abused"
+      ],
+      emotional: [
+        "i feel disgusting",
+        "i feel ashamed of what happened",
+        "i hate my body now",
+        "i'm confused about my sexuality because of it",
+        "i've never told anyone",
+        "nobody would believe me",
+        "men aren't supposed to be victims",
+        "i should have fought back",
+        "i'm less of a man because"
+      ],
+      physical: [
+        "i can't be intimate anymore",
+        "i hate being touched",
+        "sex triggers panic",
+        "i feel sick when someone touches me",
+        "my body betrayed me"
+      ],
+      behavioral: [
+        "i avoid relationships",
+        "i can't trust anyone sexually",
+        "i've become hypersexual",
+        "i've shut down sexually",
+        "i shower constantly",
+        "i can't stand certain smells"
+      ]
+    },
+    kbReferences: {
+      primary: 'trauma_ptsd',
+      supporting: [
+        'crisis_intervention',
+        'relationships_intimacy',
+        'trauma_response_protocol',
+        'therapy_resources'
+      ]
+    },
+    responseStrategy: {
+      validate: [
+        "What happened to you was sexual violence. It was not your fault",
+        "Men can be raped and sexually assaulted. This is real trauma",
+        "Your body responding doesn't mean you wanted it—that's a physiological reflex, not consent",
+        "Not fighting back doesn't mean you consented. Freeze is a survival response",
+        "You were brave to tell me. Male sexual assault survivors face unique stigma and you broke through it",
+        "Whether it was a man or woman who assaulted you, it was assault. Gender doesn't change that"
+      ],
+      context: [
+        "Explicitly address male sexual assault myths",
+        "Normalize physiological responses during assault (erection, ejaculation)",
+        "Explain freeze response vs. fight/flight",
+        "Address impact on masculinity and identity",
+        "Validate that this doesn't define sexuality",
+        "Acknowledge societal dismissal of male victims",
+        "Explain why men underreport (shame, disbelief, stigma)"
+      ],
+      actions: [
+        "Assess if assault was recent (72-hour window for SAFE kit/PEP)",
+        "Provide RAINN hotline: 1-800-656-HOPE",
+        "Offer male survivor resources specifically",
+        "Recommend trauma therapist specializing in sexual trauma",
+        "Discuss reporting as optional, not required",
+        "Address STI/pregnancy concerns if applicable",
+        "Provide grounding if in flashback",
+        "Do NOT ask for details about the assault"
+      ],
+      redFlags: [
+        "Recent assault (within 72 hours) → Medical attention urgent",
+        "Suicidal thoughts related to assault → CRISIS",
+        "Self-harm or risky sexual behavior as coping",
+        "Substance use to numb the trauma",
+        "Confusion about sexuality due to assault",
+        "Shame about 'not being a real man'",
+        "Complete sexual shutdown or hypersexuality",
+        "Blaming self ('I should have fought back')"
+      ]
+    }
+  },
+
+  // NEW: CATEGORY 5C: WITNESSED VIOLENCE/DEATH
+  {
+    id: 'witnessed_violence',
+    name: 'Witnessed Violence or Death',
+    priority: 'urgent',
+    triggerPhrases: {
+      direct: [
+        "i saw someone die",
+        "i watched someone get killed",
+        "i witnessed a murder",
+        "i saw them get shot",
+        "i saw the shooting",
+        "i was there when they died",
+        "i held them while they died",
+        "i tried to stop the bleeding",
+        "i found the body",
+        "i saw the accident",
+        "i watched them take their last breath"
+      ],
+      indirect: [
+        "i was there when it happened",
+        "i couldn't save them",
+        "i should have done something",
+        "i keep seeing it",
+        "i can't get the image out of my head",
+        "the blood",
+        "i hear the gunshots",
+        "i see it when i close my eyes"
+      ],
+      emotional: [
+        "i feel guilty i survived",
+        "why am i alive and they're not",
+        "i should have been able to stop it",
+        "i feel responsible",
+        "i was helpless",
+        "i couldn't do anything"
+      ]
+    },
+    kbReferences: {
+      primary: 'trauma_ptsd',
+      supporting: [
+        'cultural_considerations',
+        'depression',
+        'trauma_response_protocol'
+      ]
+    },
+    responseStrategy: {
+      validate: [
+        "Witnessing violence puts you in an impossible position—you see something terrible but can't stop it",
+        "That helplessness is its own kind of trauma",
+        "You being there doesn't make you responsible for what happened",
+        "The person who committed the violence is responsible, not you",
+        "Survivor's guilt is a cruel part of trauma—but your survival doesn't require justification"
+      ],
+      context: [
+        "Explain witness trauma as distinct form of trauma",
+        "Address visual flashbacks and intrusive memories",
+        "Normalize survivor's guilt",
+        "Explain why brain replays the scene",
+        "Validate powerlessness in that moment"
+      ],
+      actions: [
+        "Offer grounding if experiencing flashback right now",
+        "Recommend EMDR specifically for visual trauma",
+        "Address survivor's guilt directly",
+        "Help separate 'being there' from 'being responsible'",
+        "If community violence: acknowledge ongoing threat/chronic exposure"
+      ],
+      redFlags: [
+        "Multiple losses (chronic community violence)",
+        "Recent event (within days) → May need crisis support",
+        "Avoiding all reminders of the person/place",
+        "Substance use to avoid memories",
+        "Suicidal ideation ('should have been me')",
+        "Severe dissociation when triggered"
+      ]
+    }
+  },
+
+  // ===== END NEW TRAUMA CATEGORIES =====
+
+  // CATEGORY 5D (ORIGINAL): TRAUMA & PTSD (General - keeping for backward compatibility)
   {
     id: 'trauma_ptsd',
     name: 'Trauma & PTSD',
@@ -1018,13 +1343,84 @@ export interface DetectedIntent {
 }
 
 /**
+ * Helper function to detect trauma disclosures specifically
+ */
+export function detectTraumaDisclosure(message: string): boolean {
+  const traumaCategories = intentCategories.filter(cat => 
+    cat.id === 'trauma_disclosure' || 
+    cat.id === 'sexual_trauma' || 
+    cat.id === 'witnessed_violence'
+  );
+  
+  const lowerMessage = message.toLowerCase();
+  
+  for (const category of traumaCategories) {
+    const allPhrases = [
+      ...category.triggerPhrases.direct,
+      ...category.triggerPhrases.indirect,
+      ...(category.triggerPhrases.emotional || []),
+      ...(category.triggerPhrases.physical || []),
+      ...(category.triggerPhrases.behavioral || [])
+    ];
+    
+    for (const phrase of allPhrases) {
+      if (lowerMessage.includes(phrase.toLowerCase())) {
+        return true;
+      }
+    }
+  }
+  
+  return false;
+}
+
+/**
  * Detect user intent from message
  */
 export function detectIntent(message: string): DetectedIntent[] {
   const lowerMessage = message.toLowerCase();
   const detectedIntents: DetectedIntent[] = [];
 
+  // CHECK FOR TRAUMA FIRST - High priority detection
+  if (detectTraumaDisclosure(message)) {
+    const traumaIntents = intentCategories.filter(cat => 
+      cat.id === 'trauma_disclosure' || 
+      cat.id === 'sexual_trauma' || 
+      cat.id === 'witnessed_violence'
+    );
+    
+    for (const intent of traumaIntents) {
+      const allPhrases = [
+        ...intent.triggerPhrases.direct,
+        ...intent.triggerPhrases.indirect,
+        ...(intent.triggerPhrases.emotional || []),
+        ...(intent.triggerPhrases.physical || []),
+        ...(intent.triggerPhrases.behavioral || [])
+      ];
+      
+      const matchedPhrases = allPhrases.filter(phrase => 
+        lowerMessage.includes(phrase.toLowerCase())
+      );
+      
+      if (matchedPhrases.length > 0) {
+        detectedIntents.push({
+          category: intent,
+          confidence: 0.95, // High confidence for trauma disclosure
+          matchedPhrases: matchedPhrases,
+          priority: intent.priority
+        });
+      }
+    }
+  }
+
+  // Continue with regular detection for all categories
   for (const category of intentCategories) {
+    // Skip trauma categories if already detected above
+    if (category.id === 'trauma_disclosure' || 
+        category.id === 'sexual_trauma' || 
+        category.id === 'witnessed_violence') {
+      continue;
+    }
+
     const matchedPhrases: string[] = [];
     let matchCount = 0;
 
@@ -1206,7 +1602,8 @@ export const crisisProtocol = {
     additional: [
       { name: "SAMHSA National Helpline", contact: "1-800-662-4357" },
       { name: "The Trevor Project (LGBTQ+)", contact: "1-866-488-7386" },
-      { name: "Trans Lifeline", contact: "1-877-565-8860" }
+      { name: "Trans Lifeline", contact: "1-877-565-8860" },
+      { name: "RAINN (Sexual Assault)", contact: "1-800-656-HOPE (4673)" }
     ]
   },
   whatToSay: [
@@ -1228,8 +1625,8 @@ export const crisisProtocol = {
 export default {
   intentCategories,
   detectIntent,
+  detectTraumaDisclosure,
   getResponseStrategy,
   amaniToneGuidelines,
   crisisProtocol
 };
-

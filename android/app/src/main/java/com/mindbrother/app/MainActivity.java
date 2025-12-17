@@ -1,7 +1,11 @@
 package com.mindbrother.app;
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -19,8 +23,32 @@ public class MainActivity extends BridgeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
+        // Create notification channel for Android 8.0+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            createNotificationChannel();
+        }
+        
         // Enable edge-to-edge display
         setupEdgeToEdge();
+    }
+    
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = "Mind Brother Notifications";
+            String description = "Daily motivation, check-ins, and encouragement";
+            int importance = NotificationManager.IMPORTANCE_HIGH;
+            NotificationChannel channel = new NotificationChannel("mindbrother_default", name, importance);
+            channel.setDescription(description);
+            channel.setShowBadge(true);
+            channel.enableLights(true);
+            channel.setLightColor(Color.parseColor("#4470AD"));
+            channel.enableVibration(true);
+            
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+            
+            Log.d("MainActivity", "Notification channel created");
+        }
     }
     
     private void setupEdgeToEdge() {

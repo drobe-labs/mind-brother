@@ -91,7 +91,7 @@ echo ""
 
 # Check 6: Backend running
 echo "🚀 Checking backend status..."
-if curl -s http://localhost:3001/health > /dev/null 2>&1; then
+if curl -s http://mind-brother-production.up.railway.app:3001/health > /dev/null 2>&1; then
   echo -e "   ${GREEN}✅${NC} Backend is running on port 3001"
   BACKEND_RUNNING=true
 else
@@ -111,7 +111,7 @@ if [ "$ALL_FILES_EXIST" = true ] && [ "$BACKEND_RUNNING" = true ]; then
   echo "Next steps:"
   echo "  1. Run tests: ./run-all-tests.sh"
   echo "  2. Start frontend: npm start"
-  echo "  3. Test in browser: http://localhost:5173"
+  echo "  3. Test in browser: http://mind-brother-production.up.railway.app:5173"
   echo ""
   exit 0
 elif [ "$ALL_FILES_EXIST" = true ]; then

@@ -26,24 +26,34 @@ const FitnessWorkout = () => {
   const speechSynthRef = useRef<SpeechSynthesis | null>(null);
   const useElevenLabs = useRef(true);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+  const isMountedRef = useRef(true); // Track if component is mounted
 
   // Cleanup function to stop all audio
   const stopAllAudio = () => {
+    console.log('🛑 Stopping all audio...');
+    
     // Stop any playing audio element
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
+      currentAudioRef.current.currentTime = 0;
       currentAudioRef.current.src = '';
       currentAudioRef.current = null;
     }
     
-    // Cancel speech synthesis
-    if (speechSynthRef.current) {
+    // Cancel browser speech synthesis (important for cleanup!)
+    if (window.speechSynthesis && window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+    }
+    
+    // Also cancel via ref
+    if (speechSynthRef.current && speechSynthRef.current.speaking) {
       speechSynthRef.current.cancel();
     }
     
     // Close audio context
     if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
       audioContextRef.current.close().catch(() => {});
+      audioContextRef.current = null;
     }
     
     isCurrentlySpeaking.current = false;
@@ -51,7 +61,11 @@ const FitnessWorkout = () => {
 
   // Cleanup when component unmounts
   useEffect(() => {
+    isMountedRef.current = true;
+    
     return () => {
+      console.log('🧹 FitnessWorkout unmounting - cleaning up audio');
+      isMountedRef.current = false;
       stopAllAudio();
     };
   }, []);
@@ -123,6 +137,11 @@ const FitnessWorkout = () => {
 
   // Play audio blob (ElevenLabs)
   const playAudioBlob = async (blob: Blob): Promise<void> => {
+    // Don't play if component is unmounted
+    if (!isMountedRef.current) {
+      return Promise.resolve();
+    }
+    
     return new Promise<void>((resolve, reject) => {
       try {
         const audioUrl = URL.createObjectURL(blob);
@@ -136,21 +155,34 @@ const FitnessWorkout = () => {
         
         audio.onended = () => {
           URL.revokeObjectURL(audioUrl);
-          currentAudioRef.current = null;
+          if (currentAudioRef.current === audio) {
+            currentAudioRef.current = null;
+          }
           isCurrentlySpeaking.current = false;
           resolve();
         };
 
         audio.onerror = (error) => {
           URL.revokeObjectURL(audioUrl);
-          currentAudioRef.current = null;
+          if (currentAudioRef.current === audio) {
+            currentAudioRef.current = null;
+          }
           isCurrentlySpeaking.current = false;
           reject(error);
         };
 
+        // Final check before playing
+        if (!isMountedRef.current) {
+          URL.revokeObjectURL(audioUrl);
+          resolve();
+          return;
+        }
+
         audio.play().catch(error => {
           URL.revokeObjectURL(audioUrl);
-          currentAudioRef.current = null;
+          if (currentAudioRef.current === audio) {
+            currentAudioRef.current = null;
+          }
           isCurrentlySpeaking.current = false;
           reject(error);
         });
@@ -161,22 +193,47 @@ const FitnessWorkout = () => {
     });
   };
 
-  // Browser speech synthesis fallback
+  // Browser speech synthesis fallback - with male voice preference
   const speakWithBrowser = async (text: string): Promise<void> => {
+    // Don't speak if component is unmounted
+    if (!isMountedRef.current) return;
+    
     return new Promise<void>((resolve, reject) => {
-      if (!speechSynthRef.current) {
+      const synth = speechSynthRef.current || window.speechSynthesis;
+      
+      if (!synth) {
         reject(new Error('Speech synthesis not available'));
         return;
       }
 
       try {
-        if (speechSynthRef.current.speaking) {
-          speechSynthRef.current.cancel();
+        if (synth.speaking) {
+          synth.cancel();
         }
 
         const utterance = new SpeechSynthesisUtterance(text);
+        
+        // Try to select a male voice
+        const voices = synth.getVoices();
+        const maleVoice = voices.find(voice => 
+          voice.name.includes('Male') || 
+          voice.name.includes('David') ||
+          voice.name.includes('Daniel') ||
+          voice.name.includes('James') ||
+          voice.name.includes('Google US English Male') ||
+          (voice.name.includes('English') && voice.name.toLowerCase().includes('male'))
+        );
+        
+        if (maleVoice) {
+          utterance.voice = maleVoice;
+          console.log('🎤 Using male voice:', maleVoice.name);
+        } else {
+          // If no male voice found, at least lower the pitch
+          utterance.pitch = 0.8;
+          console.log('⚠️ No male voice found, using lower pitch');
+        }
+        
         utterance.rate = 1.0;
-        utterance.pitch = 1.0;
         utterance.volume = 1.0;
 
         utterance.onend = () => {
@@ -190,7 +247,7 @@ const FitnessWorkout = () => {
           reject(error);
         };
 
-        speechSynthRef.current.speak(utterance);
+        synth.speak(utterance);
       } catch (error) {
         isCurrentlySpeaking.current = false;
         reject(error);
@@ -198,12 +255,93 @@ const FitnessWorkout = () => {
     });
   };
 
-  // Main speak function with ElevenLabs + Browser fallback
-  const speak = async (text: string, cacheKey: string | null = null): Promise<void> => {
-    if (!voiceEnabled) return;
+  // State for preloading
+  const [isPreloading, setIsPreloading] = useState(false);
 
-    while (isCurrentlySpeaking.current) {
+  // Generate speech via backend proxy
+  const generateSpeech = async (text: string): Promise<Blob> => {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://mind-brother-production.up.railway.app';
+    
+    const response = await fetch(`${backendUrl}/api/text-to-speech`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text: text,
+        voice_id: '6OzrBCQf8cjERkYgzSg8' // Workout voice
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`TTS API failed: ${response.status}`);
+    }
+
+    return await response.blob();
+  };
+
+  // Pre-cache common workout phrases
+  const precacheWorkoutCues = async (): Promise<boolean> => {
+    const cuesToCache = [
+      // Intro
+      { text: "Hi! I'm your fitness coach! Let's get to work!", key: 'coach_intro' },
+      // Initial workout countdown only
+      { text: '3', key: 'countdown_3' },
+      { text: '2', key: 'countdown_2' },
+      { text: '1', key: 'countdown_1' },
+      { text: 'Go!', key: 'go' },
+      // Rest period announcement
+      { text: 'Rest time! Great work!', key: 'rest_start' },
+      // Motivation
+      { text: 'Halfway there! Keep it up!', key: 'halfway' },
+      { text: 'Last round! Give it everything!', key: 'last_round' },
+      { text: 'Exercise complete! Good job!', key: 'exercise_complete' },
+      { text: 'Workout complete! You crushed it!', key: 'workout_complete' },
+      // Exercise-specific cues
+      ...exercises.map((ex, i) => ({ text: `Get ready for ${ex.voiceName}!`, key: `exercise_${i}_ready` })),
+      ...exercises.map((ex, i) => ({ text: ex.midpointCue, key: `exercise_${i}_midpoint` }))
+    ];
+
+    console.log('🔄 Pre-caching workout voice cues...');
+    setIsPreloading(true);
+
+    try {
+      const results = await Promise.allSettled(
+        cuesToCache.map(async ({ text, key }) => {
+          if (!audioCache.current.has(key)) {
+            const blob = await generateSpeech(text);
+            audioCache.current.set(key, blob);
+            console.log(`✅ Cached: ${key}`);
+          }
+        })
+      );
+
+      const failures = results.filter(r => r.status === 'rejected');
+      if (failures.length > 0) {
+        console.warn(`⚠️ ${failures.length} cues failed to cache`);
+      }
+
+      setIsPreloading(false);
+      return failures.length < cuesToCache.length;
+    } catch (error) {
+      console.error('❌ Pre-cache failed:', error);
+      setIsPreloading(false);
+      return false;
+    }
+  };
+
+  // Main speak function with backend proxy + Browser fallback
+  const speak = async (text: string, cacheKey: string | null = null): Promise<void> => {
+    // Don't speak if component is unmounted or voice is disabled
+    if (!isMountedRef.current || !voiceEnabled) return;
+
+    // Wait for any current speech to finish
+    let waitCount = 0;
+    while (isCurrentlySpeaking.current && waitCount < 100) {
       await new Promise(resolve => setTimeout(resolve, 50));
+      waitCount++;
+      // Check if unmounted while waiting
+      if (!isMountedRef.current) return;
     }
 
     if (cacheKey && hasSpokenRef.current[cacheKey]) return;
@@ -211,90 +349,52 @@ const FitnessWorkout = () => {
     isCurrentlySpeaking.current = true;
 
     try {
-      if (useElevenLabs.current) {
-        // Check cache first
-        if (cacheKey && audioCache.current.has(cacheKey)) {
-          const audioBlob = audioCache.current.get(cacheKey);
-          await playAudioBlob(audioBlob);
-          hasSpokenRef.current[cacheKey] = true;
+      // Check cache first (instant playback)
+      if (cacheKey && audioCache.current.has(cacheKey)) {
+        const audioBlob = audioCache.current.get(cacheKey);
+        // Check mounted before playing
+        if (!isMountedRef.current) {
+          isCurrentlySpeaking.current = false;
           return;
         }
-
-        // Get ElevenLabs API key
-        const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
-        
-        if (!apiKey) {
-          console.warn('⚠️ Missing ElevenLabs API key, falling back to browser speech');
-          throw new Error('ElevenLabs API key not configured');
-        }
-
-        const voiceId = '6OzrBCQf8cjERkYgzSg8'; // Workout voice
-        
-        console.log('🎤 Calling ElevenLabs directly:', text.substring(0, 50) + '...');
-        
-        const abortController = new AbortController();
-        const timeoutId = setTimeout(() => {
-          console.warn('⏱️ Request timeout after 10 seconds');
-          abortController.abort();
-        }, 10000);
-        
-        let response;
-        try {
-          response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-            method: 'POST',
-            headers: {
-              'Accept': 'audio/mpeg',
-              'Content-Type': 'application/json',
-              'xi-api-key': apiKey,
-            },
-            body: JSON.stringify({
-              text: text,
-              model_id: 'eleven_turbo_v2_5',
-              voice_settings: {
-                stability: 0.4,
-                similarity_boost: 0.8,
-              },
-            }),
-            signal: abortController.signal
-          });
-          clearTimeout(timeoutId);
-          
-          if (!response.ok) {
-            const errorText = await response.text().catch(() => 'Could not read error');
-            console.error('❌ ElevenLabs API error:', response.status, errorText);
-            throw new Error(`ElevenLabs API failed: ${response.status}`);
-          }
-          
-        } catch (fetchError: any) {
-          clearTimeout(timeoutId);
-          console.error('❌ Fetch failed:', fetchError);
-          throw fetchError;
-        }
-
-        console.log('📦 Reading audio...');
-        const audioBlob = await response.blob();
-        console.log('✅ Audio received:', audioBlob.size, 'bytes');
-        
-        if (audioBlob.size === 0) {
-          throw new Error('Audio blob is empty');
-        }
-
-        if (cacheKey) {
-          audioCache.current.set(cacheKey, audioBlob);
-        }
-
         await playAudioBlob(audioBlob);
-        
-        if (cacheKey) {
-          hasSpokenRef.current[cacheKey] = true;
-        }
+        hasSpokenRef.current[cacheKey] = true;
+        return;
+      }
 
-      } else {
-        await speakWithBrowser(text);
+      // Fetch from backend
+      console.log('🎤 Fetching voice:', text.substring(0, 30) + '...');
+      const audioBlob = await generateSpeech(text);
+      
+      // Check if still mounted after fetch
+      if (!isMountedRef.current) {
+        isCurrentlySpeaking.current = false;
+        return;
+      }
+      
+      if (audioBlob.size === 0) {
+        throw new Error('Audio blob is empty');
+      }
+
+      if (cacheKey) {
+        audioCache.current.set(cacheKey, audioBlob);
+      }
+
+      await playAudioBlob(audioBlob);
+      
+      if (cacheKey) {
+        hasSpokenRef.current[cacheKey] = true;
       }
 
     } catch (error) {
-      console.error('❌ ElevenLabs failed:', error);
+      console.error('❌ TTS failed:', error);
+      
+      // Only fallback if still mounted
+      if (!isMountedRef.current) {
+        isCurrentlySpeaking.current = false;
+        return;
+      }
+      
       console.log('🔄 Falling back to browser speech...');
       
       try {
@@ -383,6 +483,22 @@ const FitnessWorkout = () => {
     speak(text, cacheKey).catch(console.error);
   };
 
+  // Speak with interruption - stops current audio first
+  const speakInterrupt = (text: string, cacheKey: string | null = null) => {
+    // Stop any current audio
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+    }
+    if (window.speechSynthesis?.speaking) {
+      window.speechSynthesis.cancel();
+    }
+    isCurrentlySpeaking.current = false;
+    hasSpokenRef.current = {}; // Reset spoken refs for fresh cues
+    
+    speak(text, cacheKey).catch(console.error);
+  };
+
   // ✅ Start workout with coach intro
   const startWorkout = async () => {
     await initializeAudio();
@@ -394,77 +510,77 @@ const FitnessWorkout = () => {
     setCurrentRound(1);
     setCurrentRep(0);
     
+    // Pre-cache all voice cues for instant playback (prevents sync issues)
+    if (voiceEnabled) {
+      await precacheWorkoutCues();
+    }
+    
+    // Wait for intro to finish before continuing
     await speak(
       "Hi! I'm your fitness coach! Let's get to work!",
       'coach_intro'
     );
     
-    setTimeout(() => {
-      speakAsync(`Get ready for ${exercises[0].voiceName}!`, 'exercise_0_ready');
-      
-      setTimeout(() => {
-        setShowCountdown(true);
-        setCountdown(3);
-        speakAsync('3', 'countdown_3');
-      }, 1500);
-    }, 800);
+    // Small pause after intro
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    // Wait for "Get ready" to finish before starting countdown
+    await speak(`Get ready for ${exercises[0].voiceName}!`, 'exercise_0_ready');
+    
+    // Now run the countdown with proper voice sync
+    setShowCountdown(true);
+    
+    // 3
+    setCountdown(3);
+    await speak('3', 'countdown_3');
+    await new Promise(resolve => setTimeout(resolve, 700)); // Visual display time
+    
+    // 2
+    setCountdown(2);
+    await speak('2', 'countdown_2');
+    await new Promise(resolve => setTimeout(resolve, 700));
+    
+    // 1
+    setCountdown(1);
+    await speak('1', 'countdown_1');
+    await new Promise(resolve => setTimeout(resolve, 700));
+    
+    // Go!
+    setCountdown(0);
+    speakAsync('Go!', 'go');
+    if (soundEffectsEnabled) {
+      playWhistle();
+    }
+    setShowCountdown(false);
+    setScreen('workout');
+    setCurrentRep(1);
   };
 
-  // ✅ FIXED: Countdown - voice and visual update simultaneously
-  useEffect(() => {
-    if (screen === 'ready' && showCountdown && isFirstExercise) {
-      if (countdown > 0) {
-        const timer = setTimeout(() => {
-          if (countdown > 1) {
-            // Speak and update visual at the same time
-            speakAsync((countdown - 1).toString(), `countdown_${countdown - 1}`);
-            setCountdown(countdown - 1);
-          } else {
-            // Countdown finished - say "Go!" and start workout
-            speakAsync('Go!', 'go');
-            if (soundEffectsEnabled) {
-              playWhistle();
-            }
-            setShowCountdown(false);
-            setScreen('workout');
-            setCurrentRep(1);
-          }
-        }, 1000); // 1 second per count
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [screen, showCountdown, countdown, isFirstExercise, soundEffectsEnabled]);
+  // Note: Initial countdown is now handled sequentially in startWorkout() for better voice sync
+  // This useEffect is kept for any future non-initial countdowns if needed
 
-  // ✅ FIXED: Rep progression - voice and visual update simultaneously
+  // Rep progression - no voice during reps to avoid overlap
   useEffect(() => {
     if (screen === 'workout' && !isPaused && currentRep > 0 && currentRep < repsPerExercise) {
       const timer = setTimeout(() => {
         const nextRep = currentRep + 1;
-        
-        // Voice coaching at last 3 reps - speak and update at same time
-        if (nextRep === repsPerExercise - 2) {
-          speakAsync('3', `last3_${currentRound}_${currentExerciseIndex}`);
-        } else if (nextRep === repsPerExercise - 1) {
-          speakAsync('2', `last2_${currentRound}_${currentExerciseIndex}`);
-        } else if (nextRep === repsPerExercise) {
-          speakAsync('1', `last1_${currentRound}_${currentExerciseIndex}`);
-        }
-        
-        // Always update visual immediately
+        // Just update visual - no voice countdown during reps
         setCurrentRep(nextRep);
         setTotalRepsCompleted(prev => prev + 1);
-      }, 2000); // 2 seconds per rep - consistent timing
+      }, 2000); // 2 seconds per rep
       return () => clearTimeout(timer);
     }
   }, [screen, currentRep, isPaused, repsPerExercise, currentExerciseIndex, currentRound]);
   
-  // Time-based midpoint coaching cues
+  // Time-based midpoint coaching cues - only if not near end of exercise
   useEffect(() => {
-    if (screen === 'workout' && !isPaused) {
+    if (screen === 'workout' && !isPaused && currentRep < repsPerExercise - 3) {
       const cueTimer = setTimeout(() => {
-        const cue = currentExercise.midpointCue;
-        console.log(`🎤 Midpoint cue for ${currentExercise.name}: "${cue}" at ${currentExercise.midpointTime}s`);
-        speakAsync(cue, `midpoint_${currentRound}_${currentExerciseIndex}`);
+        // Only speak if not too close to exercise end
+        if (currentRep < repsPerExercise - 3) {
+          const cue = currentExercise.midpointCue;
+          speakAsync(cue, `midpoint_${currentRound}_${currentExerciseIndex}`);
+        }
       }, currentExercise.midpointTime * 1000);
       
       return () => clearTimeout(cueTimer);
@@ -480,7 +596,8 @@ const FitnessWorkout = () => {
         playWhistle();
       }
       
-      speakAsync('Exercise complete! Good job!', `complete_${currentRound}_${currentExerciseIndex}`);
+      // Use interrupt to ensure this plays clearly
+      speakInterrupt('Exercise complete!', `complete_${currentRound}_${currentExerciseIndex}`);
       
       setTimeout(() => {
         const nextExerciseIndex = currentExerciseIndex + 1;
@@ -491,53 +608,46 @@ const FitnessWorkout = () => {
           setScreen('rest');
           setRestTimeRemaining(currentExercise.restAfter);
         } else if (currentRound < totalRounds) {
-          speakAsync(`Round ${currentRound} complete! Starting round ${currentRound + 1}`, `round_${currentRound}_complete`);
+          speakInterrupt(`Round ${currentRound} complete!`, `round_${currentRound}_complete`);
           setCurrentRound(currentRound + 1);
           setCurrentExerciseIndex(0);
           setIsFirstExercise(false);
           setScreen('rest');
           setRestTimeRemaining(45);
         } else {
-          speakAsync('Workout complete! You crushed it!', 'workout_complete');
+          speakInterrupt('Workout complete! Great job!', 'workout_complete');
           setScreen('complete');
         }
-      }, 2000);
+      }, 2500); // Slightly longer to let "Exercise complete" finish
     }
   }, [screen, currentRep, repsPerExercise, currentExerciseIndex, currentRound, totalRounds, soundEffectsEnabled]);
 
-  // ✅ FIXED: Rest timer - voice and visual update simultaneously
+  // Note: Removed "Rest time!" announcement - "Exercise complete!" is sufficient
+
+  // ✅ SIMPLIFIED: Rest timer - minimal voice, just whistle at end
   useEffect(() => {
     if (screen === 'rest' && restTimeRemaining > 0 && !isPaused) {
       const timer = setTimeout(() => {
         const nextExercise = exercises[currentExerciseIndex];
+        const nextTime = restTimeRemaining - 1;
         
-        // Voice cues at specific times
-        if (restTimeRemaining === 11) {
-          speakAsync(`Get ready for ${nextExercise.voiceName}`, `ready_${currentRound}_${currentExerciseIndex}`);
-        } else if (restTimeRemaining === 6) {
-          speakAsync('5', `rest_5_${currentRound}_${currentExerciseIndex}`);
-        } else if (restTimeRemaining === 5) {
-          speakAsync('4', `rest_4_${currentRound}_${currentExerciseIndex}`);
-        } else if (restTimeRemaining === 4) {
-          speakAsync('3', `rest_3_${currentRound}_${currentExerciseIndex}`);
-        } else if (restTimeRemaining === 3) {
-          speakAsync('2', `rest_2_${currentRound}_${currentExerciseIndex}`);
-        } else if (restTimeRemaining === 2) {
-          speakAsync('1', `rest_1_${currentRound}_${currentExerciseIndex}`);
-        } else if (restTimeRemaining === 1) {
-          speakAsync('Go!', `go_${currentRound}_${currentExerciseIndex}`);
+        // Update visual
+        setRestTimeRemaining(nextTime);
+        
+        // Voice cue at 8 seconds - announce next exercise (uses interrupt)
+        if (nextTime === 8) {
+          speakInterrupt(`Get ready for ${nextExercise.voiceName}`, `ready_${currentRound}_${currentExerciseIndex}`);
+        }
+        
+        // At 0 - just whistle and start (no voice countdown)
+        if (nextTime === 0) {
           if (soundEffectsEnabled) {
             playWhistle();
           }
           // Transition to workout
-          setRestTimeRemaining(0);
           setScreen('workout');
           setCurrentRep(1);
-          return;
         }
-        
-        // Update timer immediately
-        setRestTimeRemaining(restTimeRemaining - 1);
       }, 1000);
       return () => clearTimeout(timer);
     }
@@ -692,10 +802,20 @@ const FitnessWorkout = () => {
 
           <button
             onClick={startWorkout}
-            className="w-full py-8 rounded-2xl font-bold text-xl shadow-lg transition-all flex items-center justify-center gap-3 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white hover:shadow-xl"
+            disabled={isPreloading}
+            className="w-full py-8 rounded-2xl font-bold text-xl shadow-lg transition-all flex items-center justify-center gap-3 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white hover:shadow-xl disabled:opacity-70 disabled:cursor-wait"
           >
-            <Play size={28} />
-            Start Workout
+            {isPreloading ? (
+              <>
+                <div className="w-7 h-7 border-3 border-white border-t-transparent rounded-full animate-spin" />
+                Preparing Coach...
+              </>
+            ) : (
+              <>
+                <Play size={28} />
+                Start Workout
+              </>
+            )}
           </button>
 
           <button

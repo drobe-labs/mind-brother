@@ -31,7 +31,7 @@ export default function CommunityGuidelines({ onClose }: CommunityGuidelinesProp
           <section className="mb-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-3">OUR MISSION</h2>
             <p className="text-gray-700 mb-4">
-              Mind Brother exists to provide a <strong>safe, supportive, judgment-free space</strong> for Black and Brown men to prioritize their mental health and wellness. These Community Guidelines help us maintain a positive, respectful environment for everyone.
+              Mind Brother exists to provide a <strong>safe, supportive, judgment-free space</strong> for men to prioritize their mental health and wellness. These Community Guidelines help us maintain a positive, respectful environment for everyone.
             </p>
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4">
               <p className="text-sm text-blue-800 font-semibold">
@@ -333,7 +333,7 @@ export default function CommunityGuidelines({ onClose }: CommunityGuidelinesProp
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <h3 className="font-semibold text-green-900 mb-2">✅ DO:</h3>
                   <ul className="list-disc list-inside space-y-1 ml-2 text-sm text-green-800">
-                    <li>Respect diverse identities within the Black and Brown community</li>
+                    <li>Respect diverse identities within our community</li>
                     <li>Acknowledge different experiences based on identity (LGBTQ+, immigrant, etc.)</li>
                     <li>Use inclusive language</li>
                     <li>Challenge stereotypes respectfully</li>
@@ -360,7 +360,7 @@ export default function CommunityGuidelines({ onClose }: CommunityGuidelinesProp
               </div>
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="font-semibold text-blue-900 mb-2">Mind Brother welcomes ALL Black and Brown men, including:</p>
+                <p className="font-semibold text-blue-900 mb-2">Mind Brother welcomes ALL men, including:</p>
                 <ul className="list-disc list-inside space-y-1 ml-2 text-sm text-blue-800">
                   <li>LGBTQ+ brothers</li>
                   <li>Immigrant brothers</li>
@@ -689,7 +689,7 @@ I've been really struggling lately...`}
                 <strong>Mind Brother is what we make it.</strong>
               </p>
               <p className="text-sm text-blue-800 mb-3">
-                This is OUR space - a place where Black and Brown men can be vulnerable, seek support, and grow together. Let's honor that by showing up with respect, empathy, and authenticity.
+                This is OUR space - a place where men can be vulnerable, seek support, and grow together. Let's honor that by showing up with respect, empathy, and authenticity.
               </p>
               <p className="text-sm text-blue-800 font-semibold">
                 <strong>We're all in this together, brothers. Let's build something meaningful.</strong> 💙

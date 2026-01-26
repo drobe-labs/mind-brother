@@ -341,6 +341,126 @@ ${metrics.sentiment.topIssues.map(issue => `  • ${issue.category}: ${issue.cou
       projectedMonthly: Math.round(projectedMonthly * 100) / 100
     };
   }
+
+  // ⭐ MODERATION SUCCESS RATE: Track moderation actions and calculate success rate
+  private moderationActions: Array<{
+    actionId: string;
+    actionType: 'flag' | 'remove' | 'warn' | 'ban' | 'approve';
+    wasCorrect: boolean;
+    timestamp: Date;
+    falsePositive?: boolean;
+    falseNegative?: boolean;
+  }> = [];
+
+  /**
+   * Track a moderation action
+   */
+  public trackModerationAction(data: {
+    actionId: string;
+    actionType: 'flag' | 'remove' | 'warn' | 'ban' | 'approve';
+    wasCorrect: boolean;
+    falsePositive?: boolean;
+    falseNegative?: boolean;
+  }): void {
+    this.moderationActions.push({
+      ...data,
+      timestamp: new Date()
+    });
+    
+    // Keep only last 1000 actions to prevent memory issues
+    if (this.moderationActions.length > 1000) {
+      this.moderationActions = this.moderationActions.slice(-1000);
+    }
+  }
+
+  /**
+   * Calculate moderation success rate
+   */
+  public calculateModerationSuccessRate(): {
+    totalActions: number;
+    correctActions: number;
+    falsePositives: number;
+    falseNegatives: number;
+    successRate: number; // (correctActions / totalActions) * 100
+    accuracyByType: {
+      [key: string]: {
+        total: number;
+        correct: number;
+        accuracy: number;
+      };
+    };
+  } {
+    const totalActions = this.moderationActions.length;
+    
+    if (totalActions === 0) {
+      return {
+        totalActions: 0,
+        correctActions: 0,
+        falsePositives: 0,
+        falseNegatives: 0,
+        successRate: 0,
+        accuracyByType: {}
+      };
+    }
+    
+    const correctActions = this.moderationActions.filter(a => a.wasCorrect).length;
+    const falsePositives = this.moderationActions.filter(a => a.falsePositive).length;
+    const falseNegatives = this.moderationActions.filter(a => a.falseNegative).length;
+    const successRate = (correctActions / totalActions) * 100;
+    
+    // Calculate accuracy by action type
+    const accuracyByType: { [key: string]: { total: number; correct: number; accuracy: number } } = {};
+    
+    this.moderationActions.forEach(action => {
+      if (!accuracyByType[action.actionType]) {
+        accuracyByType[action.actionType] = { total: 0, correct: 0, accuracy: 0 };
+      }
+      accuracyByType[action.actionType].total++;
+      if (action.wasCorrect) {
+        accuracyByType[action.actionType].correct++;
+      }
+    });
+    
+    // Calculate accuracy percentages
+    Object.keys(accuracyByType).forEach(type => {
+      const stats = accuracyByType[type];
+      stats.accuracy = stats.total > 0 ? (stats.correct / stats.total) * 100 : 0;
+    });
+    
+    return {
+      totalActions,
+      correctActions,
+      falsePositives,
+      falseNegatives,
+      successRate: Math.round(successRate * 100) / 100,
+      accuracyByType
+    };
+  }
+
+  /**
+   * Get moderation success summary
+   */
+  public getModerationSuccessSummary(): string {
+    const stats = this.calculateModerationSuccessRate();
+    
+    if (stats.totalActions === 0) {
+      return 'No moderation actions tracked yet.';
+    }
+    
+    return `
+🛡️ MODERATION SUCCESS METRICS:
+  • Total Actions: ${stats.totalActions}
+  • Correct Actions: ${stats.correctActions}
+  • Success Rate: ${stats.successRate.toFixed(1)}%
+  • False Positives: ${stats.falsePositives}
+  • False Negatives: ${stats.falseNegatives}
+
+📊 ACCURACY BY ACTION TYPE:
+${Object.entries(stats.accuracyByType).map(([type, data]) => 
+  `  • ${type}: ${data.accuracy.toFixed(1)}% (${data.correct}/${data.total})`
+).join('\n')}
+`;
+  }
 }
 
 // Export singleton instance

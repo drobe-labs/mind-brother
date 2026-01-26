@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 type ViewType = 
   | 'home' 
@@ -13,6 +13,12 @@ type ViewType =
   | 'exercise' 
   | 'discussions'
   | 'settings'
+  | 'account-settings'
+  | 'cultural-settings'
+  | 'cultural-admin'
+  | 'cultural-analytics'
+  | 'peer-support'
+  | 'insights'
   | 'terms'
   | 'privacy'
   | 'crisis'
@@ -30,6 +36,11 @@ interface LandingPageProps {
 
 export default function LandingPage({ onNavigate, user, profile, onLogout }: LandingPageProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const menuItems = [
     { id: 'checkin', label: 'How are you feeling?', description: 'Daily Check-in' },
@@ -39,7 +50,8 @@ export default function LandingPage({ onNavigate, user, profile, onLogout }: Lan
     { id: 'journal', label: 'Personal Journal', description: 'Reflection Space' },
     { id: 'motivation', label: 'Daily Inspiration', description: 'Your Daily Boost' },
     { id: 'discussions', label: 'The Village', description: 'Connect with Others' },
-    { id: 'resources', label: 'Get Professional Support', description: 'Find Professional Help' }
+    { id: 'resources', label: 'Get Professional Support', description: 'Find Professional Help' },
+    { id: 'analytics', label: 'Analytics Dashboard', description: 'Insights & Performance Metrics', adminOnly: true }
   ];
 
   const handleMenuItemClick = (sectionId: string) => {
@@ -76,7 +88,7 @@ export default function LandingPage({ onNavigate, user, profile, onLogout }: Lan
       <div className={`fixed top-0 right-0 h-full w-80 backdrop-blur-xl transform transition-transform duration-300 ease-in-out z-40 border-l border-white border-opacity-10 ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'}`} style={{backgroundColor: '#233C67'}}>
         <div className="h-full overflow-y-auto">
           <div className="p-8" style={{ paddingTop: 'max(calc(env(safe-area-inset-top, 0px) + 4rem), 6rem)' }}>
-            {/* User Greeting */}
+            {/* User Greeting - FIXED to prevent hydration error */}
             {user && profile && (
               <div className="mb-6 pb-6 border-b border-white/20">
                 <div className="flex items-center gap-3">
@@ -85,12 +97,14 @@ export default function LandingPage({ onNavigate, user, profile, onLogout }: Lan
                   </div>
                   <div>
                     <p className="text-white/60 text-xs">Welcome back,</p>
-                    <p className="text-white font-semibold text-lg">
-                      {(profile.first_name && profile.first_name.trim().length > 0) 
-                        ? profile.first_name.trim()
-                        : (profile.username && !profile.username.startsWith('user_') 
-                          ? profile.username.trim().split(/\s+/)[0] || 'Brother' 
-                          : 'Brother')}!
+                    <p className="text-white font-semibold text-lg" suppressHydrationWarning>
+                      {mounted ? (
+                        <>
+                          {profile?.first_name?.trim() || profile?.username?.split(/\s+/)[0] || 'Brother'}!
+                        </>
+                      ) : (
+                        'Brother!'
+                      )}
                     </p>
                   </div>
                 </div>
@@ -98,22 +112,29 @@ export default function LandingPage({ onNavigate, user, profile, onLogout }: Lan
             )}
             
             <nav className="space-y-4">
-              {menuItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => handleMenuItemClick(item.id)}
-                  className="w-full text-left p-4 rounded-lg bg-white bg-opacity-5 hover:bg-opacity-10 transition-all duration-200 border border-white border-opacity-10 hover:border-opacity-20 group"
-                >
-                  <div>
-                    <h3 className="text-white font-medium text-lg group-hover:text-blue-200 transition-colors">
-                      {item.label}
-                    </h3>
-                    <p className="text-gray-300 text-sm font-normal mt-1">
-                      {item.description}
-                    </p>
-                  </div>
-                </button>
-              ))}
+              {menuItems.map((item) => {
+                // Show analytics only to authenticated users (admin/dev access)
+                if (item.adminOnly && !user) {
+                  return null;
+                }
+                
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleMenuItemClick(item.id)}
+                    className="w-full text-left p-4 rounded-lg bg-white bg-opacity-5 hover:bg-opacity-10 transition-all duration-200 border border-white border-opacity-10 hover:border-opacity-20 group"
+                  >
+                    <div>
+                      <h3 className="text-white font-medium text-lg group-hover:text-blue-200 transition-colors">
+                        {item.label}
+                      </h3>
+                      <p className="text-gray-300 text-sm font-normal mt-1">
+                        {item.description}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
             </nav>
           </div>
 
@@ -165,6 +186,118 @@ export default function LandingPage({ onNavigate, user, profile, onLogout }: Lan
               <span>Contact Us</span>
             </div>
           </button>
+
+          {/* ✅ NEW: Notification Settings Button (only shows when logged in) */}
+          {user && (
+            <button
+              onClick={() => handleMenuItemClick('settings')}
+              className="w-full mt-4 p-4 rounded-lg transition-all duration-200 text-white font-medium"
+              style={{ backgroundColor: '#4470AD' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3A5F9A'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#4470AD'}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <span>🔔</span>
+                <span>Notification Settings</span>
+              </div>
+            </button>
+          )}
+
+          {/* ✅ NEW: Account Settings Button (only shows when logged in) */}
+          {user && (
+            <button
+              onClick={() => handleMenuItemClick('account-settings')}
+              className="w-full mt-4 p-4 rounded-lg transition-all duration-200 text-white font-medium"
+              style={{ backgroundColor: '#4470AD' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3A5F9A'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#4470AD'}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <span>⚙️</span>
+                <span>Account Settings</span>
+              </div>
+            </button>
+          )}
+
+          {/* ✅ Cultural Preferences Button (only shows when logged in) */}
+          {user && (
+            <button
+              onClick={() => handleMenuItemClick('cultural-settings')}
+              className="w-full mt-4 p-4 rounded-lg transition-all duration-200 text-white font-medium"
+              style={{ backgroundColor: '#8B5CF6' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#7C3AED'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#8B5CF6'}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <span>🌍</span>
+                <span>Personalization Preferences</span>
+              </div>
+            </button>
+          )}
+
+          {/* ✅ Peer Support Button (only shows when logged in) */}
+          {user && (
+            <button
+              onClick={() => handleMenuItemClick('peer-support')}
+              className="w-full mt-4 p-4 rounded-lg transition-all duration-200 text-white font-medium"
+              style={{ backgroundColor: '#0891B2' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0E7490'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0891B2'}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <span>🤝</span>
+                <span>Peer Support</span>
+              </div>
+            </button>
+          )}
+
+          {/* ✅ My Journey Insights Button (only shows when logged in) */}
+          {user && (
+            <button
+              onClick={() => handleMenuItemClick('insights')}
+              className="w-full mt-4 p-4 rounded-lg transition-all duration-200 text-white font-medium"
+              style={{ backgroundColor: '#10B981' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#059669'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#10B981'}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <span>📊</span>
+                <span>My Journey Insights</span>
+              </div>
+            </button>
+          )}
+
+          {/* ✅ Cultural Content Admin (only shows for admins/professionals) */}
+          {user && profile?.role === 'professional' && (
+            <button
+              onClick={() => handleMenuItemClick('cultural-admin')}
+              className="w-full mt-4 p-4 rounded-lg transition-all duration-200 text-white font-medium"
+              style={{ backgroundColor: '#DC2626' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#B91C1C'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#DC2626'}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <span>🔧</span>
+                <span>Content Admin</span>
+              </div>
+            </button>
+          )}
+
+          {/* ✅ Cultural Analytics Dashboard (only shows for admins/professionals) */}
+          {user && profile?.role === 'professional' && (
+            <button
+              onClick={() => handleMenuItemClick('cultural-analytics')}
+              className="w-full mt-4 p-4 rounded-lg transition-all duration-200 text-white font-medium"
+              style={{ backgroundColor: '#0891B2' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0E7490'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0891B2'}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <span>📊</span>
+                <span>Cultural Analytics</span>
+              </div>
+            </button>
+          )}
 
           {/* Legal & Community Links */}
           <div className="mt-6 pt-6 border-t border-white/20">

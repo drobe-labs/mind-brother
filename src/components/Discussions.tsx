@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import NotificationSettings from './NotificationSettings';
 import ReactQuill from 'react-quill';
@@ -7,23 +7,263 @@ import {
   analyzeContent, 
   getCrisisResources, 
   getBlockedMessage,
-  formatTriggerWarning,
-  createContentHash
+  formatTriggerWarning
 } from '../lib/communityModeration';
 import {
   analyzeContentWithAI,
-  checkContentPatterns,
   trackUserBehavior,
   logCrisisResponse,
   createContentReport as createReport,
   createContentDispute
 } from '../lib/moderationService';
 
+// Safely import quill-mention CSS and module
+// This prevents errors on platforms where it might not load correctly
+let mentionModuleLoaded = false;
+try {
+  // Import CSS first
+  require('quill-mention/dist/quill.mention.css');
+  // Then import the module (this registers itself with Quill)
+  require('quill-mention');
+  mentionModuleLoaded = true;
+  console.log('✅ quill-mention module loaded successfully');
+} catch (e) {
+  console.warn('⚠️ quill-mention not loaded - @mentions will be disabled:', e);
+  mentionModuleLoaded = false;
+}
+
+// Extract mentioned usernames from HTML content
+const extractMentions = (htmlContent: string): string[] => {
+  const mentions: string[] = [];
+  
+  // Match mention spans: <span class="mention" data-value="username">@username</span>
+  const mentionRegex = /data-value="([^"]+)"/g;
+  let match;
+  while ((match = mentionRegex.exec(htmlContent)) !== null) {
+    if (match[1] && !mentions.includes(match[1])) {
+      mentions.push(match[1]);
+    }
+  }
+  
+  // Also match plain @username patterns (fallback)
+  const plainMentionRegex = /@([a-zA-Z0-9_-]+)/g;
+  while ((match = plainMentionRegex.exec(htmlContent)) !== null) {
+    if (match[1] && !mentions.includes(match[1])) {
+      mentions.push(match[1]);
+    }
+  }
+  
+  console.log('📝 Extracted mentions from content:', mentions);
+  return mentions;
+};
+
+// Send notifications to mentioned users
+const sendMentionNotifications = async (
+  mentionedUsernames: string[],
+  mentionerUserId: string,
+  topicId: string,
+  topicTitle: string,
+  replyPreview: string,
+  replyId?: string
+) => {
+  console.log('🔔 === MENTION NOTIFICATION DEBUG ===');
+  console.log('🔔 Mentioned usernames:', mentionedUsernames);
+  console.log('🔔 Mentioner ID:', mentionerUserId);
+  console.log('🔔 Topic ID:', topicId);
+  
+  if (mentionedUsernames.length === 0) {
+    console.log('📭 No mentions to notify');
+    return;
+  }
+  
+  try {
+    console.log('📬 Sending mention notifications to:', mentionedUsernames);
+    
+    const { supabase } = await import('../lib/supabase');
+    
+    // Get the mentioner's profile for the notification
+    const { data: mentionerProfile, error: mentionerError } = await supabase
+      .from('user_profiles')
+      .select('username, first_name')
+      .eq('user_id', mentionerUserId)
+      .single();
+    
+    console.log('🔔 Mentioner profile:', mentionerProfile, 'Error:', mentionerError);
+    
+    const mentionerName = mentionerProfile?.username || mentionerProfile?.first_name || 'Someone';
+    
+    // First, let's see what users exist with these usernames (without filtering by mention_notifications)
+    const { data: allMatchingUsers, error: debugError } = await supabase
+      .from('user_profiles')
+      .select('user_id, username, mention_notifications')
+      .in('username', mentionedUsernames);
+    
+    console.log('🔔 All matching users (before filters):', allMatchingUsers, 'Error:', debugError);
+    
+    // Get mentioned users who have mention_notifications enabled (or null - treat null as enabled)
+    const { data: mentionedUsers, error: usersError } = await supabase
+      .from('user_profiles')
+      .select('user_id, username, mention_notifications')
+      .in('username', mentionedUsernames)
+      .neq('user_id', mentionerUserId); // Don't notify yourself
+    
+    console.log('🔔 Mentioned users (after excluding self):', mentionedUsers, 'Error:', usersError);
+    
+    if (usersError) {
+      console.error('❌ Error fetching mentioned users:', usersError);
+      return;
+    }
+    
+    // Filter to users with mention_notifications enabled or null (default to enabled)
+    const usersToNotify = mentionedUsers?.filter(u => 
+      u.mention_notifications === true || u.mention_notifications === null
+    ) || [];
+    
+    if (usersToNotify.length === 0) {
+      console.log('📭 No users with mention notifications enabled. Checked users:', mentionedUsers);
+      return;
+    }
+    
+    console.log('📬 Users to notify:', usersToNotify.length, usersToNotify);
+    
+    // Debug: Check auth state
+    const { data: authData, error: authError } = await supabase.auth.getSession();
+    console.log('🔐 Auth session check:', authData?.session ? 'Valid session' : 'No session', 'Error:', authError);
+    console.log('🔐 Current user ID:', authData?.session?.user?.id);
+    
+    let successCount = 0;
+    let errorCount = 0;
+    
+    // Create in-app notifications for each mentioned user
+    for (const user of usersToNotify) {
+      try {
+        console.log('🔔 Creating notification for user:', user.username, 'ID:', user.user_id);
+        
+        const notificationData = {
+          user_id: user.user_id,
+          type: 'mention',
+          title: `${mentionerName} mentioned you`,
+          message: `${mentionerName} mentioned you in "${topicTitle}": "${replyPreview.substring(0, 100)}${replyPreview.length > 100 ? '...' : ''}"`,
+          data: {
+            topic_id: topicId,
+            mentioner_id: mentionerUserId,
+            mentioner_name: mentionerName
+          },
+          read: false
+        };
+        
+        console.log('🔔 Notification payload:', JSON.stringify(notificationData));
+        
+        // Insert notification record
+        const { data: insertData, error: notifError } = await supabase
+          .from('notifications')
+          .insert(notificationData)
+          .select();
+        
+        if (notifError) {
+          console.error('❌ Could not create notification record:', notifError);
+          console.error('❌ Error details:', JSON.stringify(notifError));
+          errorCount++;
+        } else {
+          console.log('✅ Notification created successfully:', insertData);
+          successCount++;
+          
+          // 🔥 Send real push notification via Edge Function
+          try {
+            console.log('🔥 Sending push notification to user:', user.user_id);
+            const { data: pushData, error: pushError } = await supabase.functions.invoke('send-push-notification', {
+              body: {
+                user_id: user.user_id,
+                title: notificationData.title,
+                body: notificationData.message,
+                data: {
+                  type: 'mention',
+                  topic_id: topicId,
+                  reply_id: replyId || '',
+                  mentioner_id: mentionerUserId
+                }
+              }
+            });
+            
+            if (pushError) {
+              console.warn('⚠️ Push notification failed (user may not have push token):', pushError);
+            } else {
+              console.log('✅ Push notification sent:', pushData);
+            }
+          } catch (pushErr) {
+            console.warn('⚠️ Push notification error:', pushErr);
+          }
+        }
+        
+      } catch (err) {
+        console.error('❌ Error notifying user:', user.username, err);
+        errorCount++;
+      }
+    }
+    
+    console.log(`✅ Mention notifications complete. Success: ${successCount}, Errors: ${errorCount}`);
+    console.log('🔔 === END MENTION NOTIFICATION DEBUG ===');
+  } catch (error) {
+    console.error('❌ Error sending mention notifications:', error);
+    console.log('🔔 === END MENTION NOTIFICATION DEBUG (WITH ERROR) ===');
+  }
+};
+
+// Search users function - defined outside component to avoid closure issues
+const searchUsersForMention = async (searchTerm: string): Promise<{ id: string; value: string; username: string }[]> => {
+  if (!searchTerm || searchTerm.length < 1) {
+    console.log('🔍 Empty search term, returning empty array');
+    return [];
+  }
+  
+  try {
+    console.log('🔍 Searching for users with term:', searchTerm);
+    
+    // Import supabase dynamically to avoid circular dependency issues
+    const { supabase } = await import('../lib/supabase');
+    
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('user_id, username, first_name, last_name')
+      .or(`username.ilike.%${searchTerm}%,first_name.ilike.%${searchTerm}%`)
+      .limit(10);
+
+    if (error) {
+      console.error('❌ Error searching users:', error);
+      return [];
+    }
+
+    console.log('📋 Found users:', data?.length || 0, data);
+
+    const results = (data || [])
+      .filter(user => user.username) // Only include users with usernames
+      .map(user => ({
+        id: user.user_id,
+        value: user.username || `${user.first_name || 'User'}`,
+        username: user.username || ''
+      }));
+    
+    console.log('📝 Returning mention results:', results);
+    return results;
+  } catch (error) {
+    console.error('❌ Exception in searchUsersForMention:', error);
+    return [];
+  }
+};
+
+// User mention interface
+interface MentionUser {
+  id: string;
+  value: string;
+  username: string;
+}
+
 interface DiscussionTopic {
   id: string;
   user_id: string;
   title: string;
-  content?: string;  
+  content?: string;
+  description?: string;
   category: string;
   tags?: string[];
   is_anonymous: boolean;
@@ -31,6 +271,8 @@ interface DiscussionTopic {
   view_count: number;
   created_at: string;
   last_activity_at: string;
+  auto_mod_status?: string;
+  is_removed?: boolean;
   user_profiles?: {
     username?: string;
     first_name?: string;
@@ -47,6 +289,8 @@ interface DiscussionReply {
   is_anonymous: boolean;
   helpful_count: number;
   created_at: string;
+  auto_mod_status?: string;
+  is_removed?: boolean;
   user_profiles?: {
     username?: string;
     first_name?: string;
@@ -66,7 +310,13 @@ const categories = [
   { value: 'general', label: 'General Support', color: 'bg-gray-100 text-gray-800' }
 ];
 
-export default function Discussions() {
+interface DiscussionsProps {
+  initialTopicId?: string | null;
+  initialReplyId?: string | null;
+  onTopicViewed?: () => void;
+}
+
+export default function Discussions({ initialTopicId, initialReplyId, onTopicViewed }: DiscussionsProps = {}) {
   const [topics, setTopics] = useState<DiscussionTopic[]>([]);
   const [selectedTopic, setSelectedTopic] = useState<DiscussionTopic | null>(null);
   const [replies, setReplies] = useState<DiscussionReply[]>([]);
@@ -91,10 +341,7 @@ export default function Discussions() {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
 
   // Moderation state
-  const [contentAnalysis, setContentAnalysis] = useState<any>(null);
   const [selectedTriggers, setSelectedTriggers] = useState<string[]>([]);
-  const [showBlockDialog, setShowBlockDialog] = useState(false);
-  const [blockReason, setBlockReason] = useState('');
   const [reportingPostId, setReportingPostId] = useState<string | null>(null);
   const [reportReason, setReportReason] = useState('');
   const [disputingPost, setDisputingPost] = useState<{ id: string; type: 'topic' | 'reply' } | null>(null);
@@ -105,10 +352,167 @@ export default function Discussions() {
   const [disputesLoading, setDisputesLoading] = useState(false);
   const [resolutionNotes, setResolutionNotes] = useState<Record<string, string>>({});
 
+  // Ref for quill editor
+  const quillRef = useRef<any>(null);
+  
+  // Ref for reply form - to scroll when clicking Reply on a comment
+  const replyFormRef = useRef<HTMLDivElement>(null);
+  
+  // Get the username of the reply being replied to
+  const getReplyingToUsername = (): string | null => {
+    if (!replyingTo || !replies) return null;
+    const targetReply = replies.find(r => r.id === replyingTo);
+    if (!targetReply) return null;
+    if (targetReply.is_anonymous) return 'Anonymous';
+    return targetReply.user_profiles?.username || 
+           (targetReply.user_profiles?.first_name && targetReply.user_profiles?.last_name 
+             ? `${targetReply.user_profiles.first_name} ${targetReply.user_profiles.last_name}`
+             : 'User');
+  };
+  
+  // Auto-scroll to reply form when replying to a comment
+  useEffect(() => {
+    if (replyingTo && replyFormRef.current) {
+      console.log('📜 Scrolling to reply form for:', replyingTo);
+      replyFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Focus the editor after scrolling
+      setTimeout(() => {
+        if (quillRef.current) {
+          const editor = quillRef.current.getEditor?.();
+          if (editor) {
+            editor.focus();
+          }
+        }
+      }, 500);
+    }
+  }, [replyingTo]);
+
+  // Quill modules configuration - conditionally include mention support
+  const quillModules = useMemo(() => {
+    console.log('📝 Building Quill modules, mentionModuleLoaded:', mentionModuleLoaded);
+    
+    const baseModules: any = {
+      toolbar: [
+        ['bold', 'italic', 'underline'],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        ['link'],
+        ['clean']
+      ]
+    };
+    
+    // Only add mention module if it was loaded successfully
+    if (mentionModuleLoaded) {
+      console.log('✅ Adding mention module to Quill config');
+      baseModules.mention = {
+        allowedChars: /^[A-Za-z0-9_\-]*$/,
+        mentionDenotationChars: ['@'],
+        showDenotationChar: true,
+        spaceAfterInsert: true,
+        defaultMenuOrientation: 'bottom',
+        blotName: 'mention',
+        dataAttributes: ['id', 'value', 'username'],
+        renderItem: (item: MentionUser) => {
+          return `<span class="mention-item">@${item.value}</span>`;
+        },
+        source: async function(searchTerm: string, renderList: (items: MentionUser[], searchTerm: string) => void) {
+          console.log('🔎 Mention source triggered with:', searchTerm);
+          try {
+            const users = await searchUsersForMention(searchTerm);
+            console.log('📝 Rendering user list:', users);
+            renderList(users, searchTerm);
+          } catch (err) {
+            console.error('❌ Error in mention source:', err);
+            renderList([], searchTerm);
+          }
+        },
+        onSelect: (item: MentionUser, insertItem: (item: MentionUser) => void) => {
+          console.log('✅ User selected:', item);
+          insertItem(item);
+        }
+      };
+    } else {
+      console.log('⚠️ Mention module not loaded, skipping mention config');
+    }
+    
+    return baseModules;
+  }, []);
+
+  // Quill formats to allow mentions (include mention only if module loaded)
+  const quillFormats = useMemo(() => {
+    const formats = ['bold', 'italic', 'underline', 'list', 'bullet', 'link'];
+    if (mentionModuleLoaded) {
+      formats.push('mention');
+    }
+    return formats;
+  }, []);
+
   useEffect(() => {
     loadCurrentUser();
     loadTopics();
   }, [selectedCategory]);
+
+  // Handle deep link navigation from push notifications
+  useEffect(() => {
+    const loadInitialTopic = async () => {
+      if (initialTopicId) {
+        console.log('🔗 Deep link: Loading topic from notification:', initialTopicId, 'reply:', initialReplyId);
+        
+        // Fetch the topic
+        const { data: topic, error } = await supabase
+          .from('discussion_topics')
+          .select('*')
+          .eq('id', initialTopicId)
+          .single();
+        
+        if (topic && !error) {
+          console.log('🔗 Deep link: Topic found, selecting:', topic.title);
+          setSelectedTopic(topic);
+          setCurrentView('topic');
+          await loadReplies(topic.id);
+          
+          // Increment view count for deep-linked topic
+          try {
+            await supabase
+              .from('discussion_topics')
+              .update({ view_count: (topic.view_count || 0) + 1 })
+              .eq('id', topic.id);
+            setSelectedTopic(prev => prev ? { ...prev, view_count: (prev.view_count || 0) + 1 } : prev);
+          } catch (e) {
+            console.error('Failed to increment view count:', e);
+          }
+          
+          // Scroll to specific reply if provided
+          if (initialReplyId) {
+            // Wait for replies to render, then scroll
+            setTimeout(() => {
+              const replyElement = document.getElementById(`reply-${initialReplyId}`);
+              if (replyElement) {
+                console.log('🔗 Deep link: Scrolling to reply:', initialReplyId);
+                replyElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Highlight the reply briefly
+                replyElement.style.backgroundColor = '#fef3c7';
+                setTimeout(() => {
+                  replyElement.style.backgroundColor = '';
+                  replyElement.style.transition = 'background-color 0.5s ease';
+                }, 2000);
+              } else {
+                console.log('🔗 Deep link: Reply element not found:', initialReplyId);
+              }
+            }, 500);
+          }
+          
+          // Notify parent that we've handled the topic
+          if (onTopicViewed) {
+            onTopicViewed();
+          }
+        } else {
+          console.error('🔗 Deep link: Topic not found:', error);
+        }
+      }
+    };
+    
+    loadInitialTopic();
+  }, [initialTopicId, initialReplyId]);
 
   const loadCurrentUser = async () => {
     const { data: user } = await supabase.auth.getUser();
@@ -179,7 +583,7 @@ export default function Discussions() {
       const notes = resolutionNotes[id] || '';
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error('Not authenticated');
-      const resp = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://mind-brother-production.up.railway.app'}/api/moderation/disputes/${id}/resolve`, {
+      const resp = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://192.168.5.180:3001'}/api/moderation/disputes/${id}/resolve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -258,43 +662,71 @@ export default function Discussions() {
 
   const loadReplies = async (topicId: string) => {
     try {
-      // First get replies (exclude deleted)
+      console.log('📥 Loading replies for topic:', topicId);
+      
+      // First get replies - simpler query to avoid potential issues
       const { data: repliesData, error: repliesError } = await supabase
         .from('discussion_replies')
-        .eq('is_removed', false) // Filter out deleted replies
         .select('*')
         .eq('topic_id', topicId)
-        .is('parent_reply_id', null)
         .order('created_at', { ascending: true });
+      
+      console.log('📋 Raw replies query result:', {
+        count: repliesData?.length || 0,
+        error: repliesError,
+        errorMessage: repliesError?.message,
+        errorCode: repliesError?.code,
+        errorDetails: repliesError?.details,
+        errorHint: repliesError?.hint
+      });
 
-      if (repliesError) throw repliesError;
+      if (repliesError) {
+        console.error('❌ Supabase error loading replies:', JSON.stringify(repliesError, null, 2));
+        throw repliesError;
+      }
+      
+      // Filter out removed replies in JS (more reliable than DB filter)
+      const activeReplies = (repliesData || []).filter(r => !r.is_removed && !r.parent_reply_id);
+      console.log('📋 Active replies after filtering:', activeReplies.length);
 
       // Then get user profiles for each reply
-      if (repliesData && repliesData.length > 0) {
-        const userIds = [...new Set(repliesData.map(r => r.user_id))];
+      if (activeReplies && activeReplies.length > 0) {
+        const userIds = [...new Set(activeReplies.map(r => r.user_id))];
+        console.log('📋 Fetching profiles for user IDs:', userIds);
+        
         const { data: profilesData, error: profilesError } = await supabase
           .from('user_profiles')
           .select('user_id, username, first_name, last_name')
           .in('user_id', userIds);
 
         if (profilesError) {
-          console.warn('Could not load user profiles:', profilesError);
-          setReplies(repliesData); // Still show replies without profile data
+          console.warn('⚠️ Could not load user profiles:', profilesError);
+          setReplies(activeReplies); // Still show replies without profile data
           return;
         }
 
+        console.log('📋 Profiles loaded:', profilesData?.length || 0);
+
         // Merge profile data into replies
-        const repliesWithProfiles = repliesData.map(reply => ({
+        const repliesWithProfiles = activeReplies.map(reply => ({
           ...reply,
           user_profiles: profilesData?.find(p => p.user_id === reply.user_id) || null
         }));
 
+        console.log('✅ Setting replies with profiles:', repliesWithProfiles.length);
         setReplies(repliesWithProfiles);
       } else {
+        console.log('📭 No active replies found');
         setReplies([]);
       }
-    } catch (error) {
-      console.error('Error loading replies:', error);
+    } catch (error: any) {
+      console.error('❌ Error loading replies:', error);
+      console.error('❌ Error details:', {
+        message: error?.message,
+        code: error?.code,
+        name: error?.name,
+        stack: error?.stack?.substring(0, 500)
+      });
       setReplies([]); // Show empty instead of failing
     }
   };
@@ -339,10 +771,8 @@ export default function Discussions() {
         return;
       }
 
-      if (behaviorTracking?.isRapid) {
-        const confirmPost = confirm(`You've posted ${behaviorTracking.postsInLastHour} times in the last hour. The limit is 5 posts per hour to maintain quality discussions. Would you like to continue anyway?`);
-        if (!confirmPost) return;
-      }
+      // Rate limit removed - no posting limits in community discussions
+      // if (behaviorTracking?.isRapid) { ... }
 
       // ⭐ LAYER 3: Prepare content with trigger warnings
       let finalContent = newTopicDescription;
@@ -506,8 +936,17 @@ export default function Discussions() {
     }
 
     try {
+      // Check if user is logged in
+      if (!currentUser) {
+        alert('Please log in to reply.\n\nYou need to be signed in to participate in discussions.');
+        return;
+      }
+
       const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('Not authenticated');
+      if (!user.user) {
+        alert('Your session has expired. Please log in again to reply.');
+        return;
+      }
 
       // ⭐ LAYER 1: Keyword-based moderation
       const analysis = analyzeContent(replyText);
@@ -528,10 +967,8 @@ export default function Discussions() {
         return;
       }
 
-      if (behaviorTracking?.isRapid) {
-        const confirmPost = confirm(`You've posted ${behaviorTracking.postsInLastHour} times in the last hour. Would you like to continue anyway?`);
-        if (!confirmPost) return;
-      }
+      // Rate limit removed - no posting limits in community discussions
+      // if (behaviorTracking?.isRapid) { ... }
 
       let riskLevel = analysis.riskLevel || 'none';
       let autoModStatus = 'approved';
@@ -600,9 +1037,26 @@ export default function Discussions() {
 
       console.log('Reply created successfully:', data);
 
+      // Get the reply ID for notifications and AI analysis
+      const newReplyId = data && data.length > 0 ? data[0].id : null;
+
+      // Increment reply count on the topic
+      if (selectedTopic) {
+        try {
+          await supabase
+            .from('discussion_topics')
+            .update({ 
+              reply_count: (selectedTopic.reply_count || 0) + 1,
+              last_activity_at: new Date().toISOString()
+            })
+            .eq('id', selectedTopic.id);
+        } catch (e) {
+          console.error('Failed to increment reply count:', e);
+        }
+      }
+
       // ⭐ LAYER 4: AI-Powered Analysis (background, async)
-      if (data && data.length > 0 && data[0].id) {
-        const replyId = data[0].id;
+      if (newReplyId) {
         analyzeContentWithAI(replyText, 'reply').then(async (aiResult) => {
           if (aiResult.success && aiResult.analysis) {
             // Update reply with AI analysis
@@ -616,13 +1070,13 @@ export default function Discussions() {
                   : aiResult.analysis.recommendedAction === 'flag' ? 'flagged' 
                   : autoModStatus
               })
-              .eq('id', replyId);
+              .eq('id', newReplyId);
 
             // If AI detects crisis, trigger response
             if (aiResult.analysis.riskLevel === 'critical' || aiResult.analysis.riskLevel === 'high') {
               await logCrisisResponse(
                 user.user.id,
-                replyId,
+                newReplyId,
                 'reply',
                 aiResult.analysis.riskLevel === 'critical' ? 'critical' : 'high',
                 'ai_detected'
@@ -662,6 +1116,24 @@ export default function Discussions() {
           });
         }
 
+        // ⭐ LAYER 5: Send mention notifications
+        const mentionedUsernames = extractMentions(replyContent);
+        if (mentionedUsernames.length > 0) {
+          // Get topic title for notification
+          const topicTitle = selectedTopic.title || 'a discussion';
+          const replyPreview = replyText.substring(0, 150);
+          
+          // Send notifications (async, don't block)
+          sendMentionNotifications(
+            mentionedUsernames,
+            user.user.id,
+            selectedTopic.id,
+            topicTitle,
+            replyPreview,
+            newReplyId || undefined
+          ).catch(err => console.error('Error sending mention notifications:', err));
+        }
+
         // Reload replies
         await loadReplies(selectedTopic.id);
       }
@@ -691,6 +1163,21 @@ export default function Discussions() {
     setSelectedTopic(topic);
     setCurrentView('topic');
     await loadReplies(topic.id);
+    
+    // Increment view count
+    try {
+      const { error } = await supabase
+        .from('discussion_topics')
+        .update({ view_count: (topic.view_count || 0) + 1 })
+        .eq('id', topic.id);
+      
+      if (!error) {
+        // Update local state with new view count
+        setSelectedTopic(prev => prev ? { ...prev, view_count: (prev.view_count || 0) + 1 } : prev);
+      }
+    } catch (e) {
+      console.error('Failed to increment view count:', e);
+    }
   };
 
   const addTopicTag = () => {
@@ -868,42 +1355,47 @@ export default function Discussions() {
     const canDispute = isAuthor && (reply.auto_mod_status === 'flagged' || reply.auto_mod_status === 'blocked');
     
     return (
-      <div className={`${depth > 0 ? 'ml-8 border-l-2 border-gray-200 pl-4' : ''} mb-4`}>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex justify-between items-start mb-3">
-            <div>
+      <div id={`reply-${reply.id}`} className={`${depth > 0 ? 'ml-8 border-l-2 border-gray-200 pl-4' : ''} mb-4 transition-colors duration-500`}>
+        <div className="bg-white rounded-lg border border-gray-200 p-4 overflow-hidden">
+          {/* Header row - wraps on mobile */}
+          <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
+            {/* User info and date */}
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <span className="font-medium text-gray-900">
                 {getUserDisplayName(reply.user_profiles, reply.is_anonymous || false)}
               </span>
-              <span className="text-sm text-gray-500 ml-2">
+              <span className="text-sm text-gray-500">
                 {reply.created_at ? new Date(reply.created_at).toLocaleDateString() : 'Unknown date'}
               </span>
-              {reply.helpful_count && reply.helpful_count > 0 && (
-                <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full ml-2">
+              {reply.helpful_count > 0 && (
+                <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
                   {reply.helpful_count} helpful
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-3">
-            {canDelete && (
-              <button
-                onClick={() => deleteReply(reply.id)}
-                className="text-xs text-red-600 hover:text-red-700 hover:underline"
-                title="Delete this reply"
-              >
-                🗑️ Delete
-              </button>
+            {/* Action buttons - shrink and wrap */}
+            {(canDelete || canDispute) && (
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {canDelete && (
+                  <button
+                    onClick={() => deleteReply(reply.id)}
+                    className="text-xs text-red-600 hover:text-red-700 active:text-red-800 px-2 py-1 rounded hover:bg-red-50 whitespace-nowrap"
+                    title="Delete this reply"
+                  >
+                    🗑️ Delete
+                  </button>
+                )}
+                {canDispute && (
+                  <button
+                    onClick={() => setDisputingPost({ id: reply.id, type: 'reply' })}
+                    className="text-xs text-blue-600 hover:text-blue-700 active:text-blue-800 px-2 py-1 rounded hover:bg-blue-50 whitespace-nowrap"
+                    title="Dispute moderation decision"
+                  >
+                    📝 Dispute
+                  </button>
+                )}
+              </div>
             )}
-            {canDispute && (
-              <button
-                onClick={() => setDisputingPost({ id: reply.id, type: 'reply' })}
-                className="text-xs text-blue-600 hover:text-blue-700 hover:underline"
-                title="Dispute moderation decision"
-              >
-                📝 Dispute
-              </button>
-            )}
-            </div>
           </div>
           
           {reply.content && (
@@ -913,15 +1405,25 @@ export default function Discussions() {
             />
           )}
         
-          <div className="flex space-x-4 text-sm">
-            <button className="text-indigo-600 hover:text-indigo-700 transition-colors">
-              Helpful
+          <div className="flex space-x-2 text-sm mt-2">
+            <button 
+              className="text-indigo-600 hover:text-indigo-700 active:text-indigo-800 transition-colors px-3 py-2 min-h-[44px] min-w-[44px] rounded-md hover:bg-indigo-50 active:bg-indigo-100 flex items-center justify-center"
+              onClick={() => {
+                console.log('👍 Helpful button clicked for reply:', reply.id);
+                // TODO: Implement helpful vote
+                alert('Helpful vote feature coming soon!');
+              }}
+            >
+              👍 Helpful
             </button>
             <button 
-              onClick={() => setReplyingTo(reply.id)}
-              className="text-gray-600 hover:text-gray-700 transition-colors"
+              onClick={() => {
+                console.log('💬 Reply button clicked for reply:', reply.id);
+                setReplyingTo(reply.id);
+              }}
+              className="text-gray-600 hover:text-gray-700 active:text-gray-800 transition-colors px-3 py-2 min-h-[44px] min-w-[44px] rounded-md hover:bg-gray-100 active:bg-gray-200 flex items-center justify-center"
             >
-              Reply
+              💬 Reply
             </button>
           </div>
         </div>
@@ -1038,17 +1540,14 @@ export default function Discussions() {
                   theme="snow"
                   value={newTopicDescription}
                   onChange={setNewTopicDescription}
-                  placeholder="Provide more context about your discussion topic..."
-                  modules={{
-                    toolbar: [
-                      ['bold', 'italic', 'underline'],
-                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                      ['link'],
-                      ['clean']
-                    ]
-                  }}
+                  placeholder="Provide more context about your discussion topic... Type @ to mention a user"
+                  modules={quillModules}
+                  formats={quillFormats}
                   className="min-h-[120px]"
                 />
+                <p className="text-xs text-gray-500 px-3 py-1 bg-gray-50 border-t border-gray-200">
+                  💡 Tip: Type <span className="font-mono bg-gray-200 px-1 rounded">@username</span> to mention someone
+                </p>
               </div>
             </div>
 
@@ -1119,8 +1618,7 @@ export default function Discussions() {
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
                 style={newTopicTitle.trim() ? {
-                  backgroundColor: '#4470AD',
-                  ':hover': { backgroundColor: '#3A5F9A' }
+                  backgroundColor: '#4470AD'
                 } : undefined}
                 onMouseEnter={(e) => newTopicTitle.trim() && (e.currentTarget.style.backgroundColor = '#3A5F9A')}
                 onMouseLeave={(e) => newTopicTitle.trim() && (e.currentTarget.style.backgroundColor = '#4470AD')}
@@ -1214,29 +1712,51 @@ export default function Discussions() {
         </div>
 
         {/* New Reply Form */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-10">
-          <h3 className="text-[20px] font-bold text-gray-900 mb-4">
+        <div 
+          ref={replyFormRef}
+          className={`bg-white rounded-lg shadow-sm border p-6 mb-10 ${replyingTo ? 'border-indigo-400 ring-2 ring-indigo-200' : 'border-gray-200'}`}
+        >
+          <h3 className="text-[20px] font-bold text-gray-900 mb-2">
             {replyingTo ? 'Reply to Comment' : 'Add Your Reply'}
           </h3>
           
-          <div className="space-y-4">
-            <div className="bg-white rounded-md border border-gray-300">
-              <ReactQuill
-                theme="snow"
-                value={replyContent}
-                onChange={setReplyContent}
-                placeholder="Share your thoughts, experiences, or advice..."
-                modules={{
-                  toolbar: [
-                    ['bold', 'italic', 'underline'],
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                    ['link'],
-                    ['clean']
-                  ]
-                }}
-                className="min-h-[120px]"
-              />
+          {/* Show login prompt if not authenticated */}
+          {!currentUser ? (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+              <p className="text-blue-800 font-medium mb-2">🔐 Please log in to reply</p>
+              <p className="text-blue-600 text-sm">You need to be signed in to participate in discussions.</p>
             </div>
+          ) : (
+            <>
+              {replyingTo && (
+                <p className="text-sm text-indigo-600 mb-4 flex items-center">
+                  <span className="mr-2">💬</span>
+                  Replying to <strong className="mx-1">{getReplyingToUsername()}</strong>
+                  <button 
+                    onClick={() => setReplyingTo(null)}
+                    className="ml-2 text-gray-500 hover:text-gray-700 underline text-xs"
+                  >
+                    (cancel)
+                  </button>
+                </p>
+              )}
+              
+              <div className="space-y-4">
+                <div className="bg-white rounded-md border border-gray-300">
+                  <ReactQuill
+                    ref={quillRef}
+                    theme="snow"
+                    value={replyContent}
+                    onChange={setReplyContent}
+                    placeholder="Share your thoughts, experiences, or advice... Type @ to mention a user"
+                    modules={quillModules}
+                    formats={quillFormats}
+                    className="min-h-[120px]"
+                  />
+                  <p className="text-xs text-gray-500 px-3 py-1 bg-gray-50 border-t border-gray-200">
+                    💡 Tip: Type <span className="font-mono bg-gray-200 px-1 rounded">@username</span> to mention someone
+                  </p>
+                </div>
             
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -1270,8 +1790,7 @@ export default function Discussions() {
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   }`}
                   style={replyContent.trim() && !isLoading ? {
-                    backgroundColor: '#4470AD',
-                    ':hover': { backgroundColor: '#3A5F9A' }
+                    backgroundColor: '#4470AD'
                   } : undefined}
                   onMouseEnter={(e) => replyContent.trim() && !isLoading && (e.currentTarget.style.backgroundColor = '#3A5F9A')}
                   onMouseLeave={(e) => replyContent.trim() && !isLoading && (e.currentTarget.style.backgroundColor = '#4470AD')}
@@ -1281,6 +1800,8 @@ export default function Discussions() {
               </div>
             </div>
           </div>
+            </>
+          )}
         </div>
 
         {/* Replies */}
@@ -1395,8 +1916,7 @@ export default function Discussions() {
                 onClick={() => setCurrentView('create')}
                 className="text-white px-6 py-2 rounded-md transition-colors text-[16px] font-semibold"
                 style={{
-                  backgroundColor: '#4470AD',
-                  ':hover': { backgroundColor: '#3A5F9A' }
+                  backgroundColor: '#4470AD'
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3A5F9A'}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#4470AD'}

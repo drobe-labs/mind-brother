@@ -145,7 +145,7 @@ export class GracefulDegradation {
    */
   private async classifyWithClaudeSimple(message: string, context: any): Promise<any> {
     // Use a simplified prompt for faster response
-    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://mind-brother-production.up.railway.app';
+    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://192.168.5.180:3001';
     
     const simplePrompt = `Classify this message into one category: CRISIS, EMPLOYMENT, RELATIONSHIP, MENTAL_HEALTH, TECH_ISSUE, or GENERAL.
     

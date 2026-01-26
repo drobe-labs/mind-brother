@@ -207,7 +207,7 @@ export default function ProfessionalAgreement({ onClose, onAccept }: Professiona
               <p className="mb-2">You commit to:</p>
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li>Providing culturally sensitive and appropriate care</li>
-                <li>Understanding the unique needs of Black and Brown communities</li>
+                <li>Understanding the unique needs of diverse communities</li>
                 <li>Addressing implicit bias in your practice</li>
                 <li>Seeking consultation when working with unfamiliar populations</li>
                 <li>Continuing education in cultural competence</li>

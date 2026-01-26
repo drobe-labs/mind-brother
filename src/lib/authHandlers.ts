@@ -368,6 +368,118 @@ export const getCurrentUser = async () => {
 };
 
 /**
+ * Change password for logged-in user
+ */
+export const handleChangePassword = async (currentPassword: string, newPassword: string) => {
+  try {
+    console.log('🔐 Attempting to change password...');
+    
+    // Validate password strength
+    if (newPassword.length < 8) {
+      throw new Error('Password must be at least 8 characters long');
+    }
+    
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword)) {
+      throw new Error('Password must contain at least one uppercase letter, one lowercase letter, and one number');
+    }
+    
+    // Get current session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !session) {
+      throw new Error('You must be logged in to change your password');
+    }
+    
+    // Verify current password by attempting to sign in
+    const { error: verifyError } = await supabase.auth.signInWithPassword({
+      email: session.user.email!,
+      password: currentPassword
+    });
+    
+    if (verifyError) {
+      throw new Error('Current password is incorrect');
+    }
+    
+    // Update password
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+    
+    if (updateError) {
+      console.error('❌ Password update error:', updateError);
+      throw new Error(updateError.message || 'Failed to update password');
+    }
+    
+    console.log('✅ Password changed successfully');
+    return { success: true, message: 'Password changed successfully' };
+  } catch (error: any) {
+    console.error('❌ Change password error:', error);
+    throw new Error(error.message || 'Failed to change password');
+  }
+};
+
+/**
+ * Change username for logged-in user
+ */
+export const handleChangeUsername = async (newUsername: string) => {
+  try {
+    console.log('👤 Attempting to change username to:', newUsername);
+    
+    // Validate username
+    if (!newUsername || newUsername.trim().length < 3) {
+      throw new Error('Username must be at least 3 characters long');
+    }
+    
+    if (!/^[a-zA-Z0-9_]+$/.test(newUsername)) {
+      throw new Error('Username can only contain letters, numbers, and underscores');
+    }
+    
+    // Get current session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !session) {
+      throw new Error('You must be logged in to change your username');
+    }
+    
+    // Check if username is already taken
+    const { data: existingUser, error: checkError } = await supabase
+      .from('user_profiles')
+      .select('user_id')
+      .eq('username', newUsername.trim().toLowerCase())
+      .single();
+    
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned (good)
+      console.error('❌ Username check error:', checkError);
+      throw new Error('Error checking username availability');
+    }
+    
+    if (existingUser && existingUser.user_id !== session.user.id) {
+      throw new Error('Username is already taken');
+    }
+    
+    // Update username in profile
+    const { error: updateError } = await supabase
+      .from('user_profiles')
+      .update({
+        username: newUsername.trim().toLowerCase(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', session.user.id);
+    
+    if (updateError) {
+      console.error('❌ Username update error:', updateError);
+      throw new Error(updateError.message || 'Failed to update username');
+    }
+    
+    console.log('✅ Username changed successfully');
+    return { success: true, message: 'Username changed successfully', username: newUsername.trim().toLowerCase() };
+  } catch (error: any) {
+    console.error('❌ Change username error:', error);
+    throw new Error(error.message || 'Failed to change username');
+  }
+};
+
+/**
  * Reset password
  */
 export const handlePasswordReset = async (email: string) => {

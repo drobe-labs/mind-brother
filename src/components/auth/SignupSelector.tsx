@@ -7,8 +7,9 @@ interface SignupSelectorProps {
 
 export default function SignupSelector({ onSelectUserSignup, onSelectProfessionalSignup }: SignupSelectorProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4 safe-area-inset">
-      <div className="max-w-5xl w-full">
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 overflow-y-auto safe-area-inset">
+      <div className="min-h-screen flex flex-col justify-center p-4 py-8">
+        <div className="max-w-5xl w-full mx-auto">
         {/* Header */}
         <div className="text-center mb-12 safe-area-top">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
@@ -123,7 +124,7 @@ export default function SignupSelector({ onSelectUserSignup, onSelectProfessiona
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-8">
+        <div className="text-center mt-8 pb-8">
           <p className="text-white/60 text-sm">
             Already have an account?{' '}
             <button 
@@ -133,6 +134,7 @@ export default function SignupSelector({ onSelectUserSignup, onSelectProfessiona
               Sign In
             </button>
           </p>
+        </div>
         </div>
       </div>
     </div>

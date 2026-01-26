@@ -1,5 +1,8 @@
 // Feedback & Analytics System for Continuous Improvement
 // Tracks conversation quality, engagement, and user satisfaction
+// Now with Supabase integration for persistent learning
+
+import { supabase } from './supabase';
 
 export interface ConversationRating {
   conversationId: string;
@@ -84,7 +87,100 @@ export class FeedbackAnalyticsService {
     this.ratings.push(fullRating);
     this.saveToStorage();
     
+    // ⭐ NEW: Save to Supabase for persistent learning
+    this.saveRatingToSupabase(fullRating);
+    
     console.log(`📊 Rating recorded: ${rating.rating} for topic: ${rating.topic}`);
+  }
+
+  // ⭐ NEW: Save feedback to Supabase database
+  private async saveRatingToSupabase(rating: ConversationRating): Promise<void> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.log('⚠️ No user logged in, skipping Supabase save');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('chatbot_feedback')
+        .insert({
+          user_id: user.id,
+          message_id: rating.messageId,
+          user_message: rating.feedbackText || '', // We'll update this
+          ai_response: '', // We'll update ChatbotWeb to pass this
+          rating: rating.rating,
+          topic: rating.topic,
+          response_type: 'claude'
+        });
+
+      if (error) {
+        console.error('❌ Error saving feedback to Supabase:', error);
+      } else {
+        console.log('✅ Feedback saved to Supabase for learning');
+      }
+    } catch (error) {
+      console.error('❌ Error in saveRatingToSupabase:', error);
+    }
+  }
+
+  // ⭐ NEW: Get learned patterns from Supabase to improve responses
+  async getLearnedPatterns(): Promise<Array<{
+    topic: string;
+    pattern_type: string;
+    pattern_description: string;
+    example_bad_response?: string;
+  }>> {
+    try {
+      const { data, error } = await supabase
+        .from('chatbot_learned_patterns')
+        .select('topic, pattern_type, pattern_description, example_bad_response')
+        .eq('active', true)
+        .gte('confidence_score', 0.6);
+
+      if (error) {
+        console.error('❌ Error fetching learned patterns:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('❌ Error in getLearnedPatterns:', error);
+      return [];
+    }
+  }
+
+  // ⭐ NEW: Generate system prompt additions based on learned patterns
+  async getLearnedPromptAdditions(): Promise<string> {
+    const patterns = await this.getLearnedPatterns();
+    
+    if (patterns.length === 0) {
+      return '';
+    }
+
+    const avoidPatterns = patterns.filter(p => p.pattern_type === 'avoid');
+    const preferPatterns = patterns.filter(p => p.pattern_type === 'prefer');
+
+    let additions = '\n\n=== LEARNED FROM USER FEEDBACK ===\n';
+    
+    if (avoidPatterns.length > 0) {
+      additions += '\nBased on user feedback, AVOID:\n';
+      avoidPatterns.forEach(p => {
+        additions += `- When discussing ${p.topic}: ${p.pattern_description}\n`;
+        if (p.example_bad_response) {
+          additions += `  (Users disliked: "${p.example_bad_response.substring(0, 100)}...")\n`;
+        }
+      });
+    }
+
+    if (preferPatterns.length > 0) {
+      additions += '\nBased on user feedback, users PREFER:\n';
+      preferPatterns.forEach(p => {
+        additions += `- When discussing ${p.topic}: ${p.pattern_description}\n`;
+      });
+    }
+
+    return additions;
   }
 
   getRatingStats(timeRange?: { start: Date; end: Date }): {

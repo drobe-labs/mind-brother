@@ -1,7 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { Play, Pause, RotateCcw, SkipForward, Trophy, Flame, RefreshCw } from 'lucide-react';
+import { Play, Pause, RotateCcw, SkipForward, Trophy, Flame, RefreshCw, ArrowLeft } from 'lucide-react';
 
-const FitnessWorkout = () => {
+interface FitnessWorkoutProps {
+  onBack?: () => void; // Callback to exit the module entirely
+}
+
+const FitnessWorkout = ({ onBack }: FitnessWorkoutProps) => {
   const [screen, setScreen] = useState('setup');
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [currentRound, setCurrentRound] = useState(1);
@@ -260,7 +264,7 @@ const FitnessWorkout = () => {
 
   // Generate speech via backend proxy
   const generateSpeech = async (text: string): Promise<Blob> => {
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://mind-brother-production.up.railway.app';
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://192.168.5.180:3001';
     
     const response = await fetch(`${backendUrl}/api/text-to-speech`, {
       method: 'POST',
@@ -702,11 +706,36 @@ const FitnessWorkout = () => {
     clearAllCaches();
   };
 
+  // Handle back navigation based on current screen
+  const handleBack = () => {
+    if (screen === 'setup') {
+      // On setup screen, exit the module entirely
+      if (onBack) {
+        onBack();
+      }
+    } else {
+      // On any other screen, stop workout and go back to setup
+      stopAllAudio();
+      resetWorkout();
+    }
+  };
+
   // Setup Screen
   if (screen === 'setup') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-6 safe-area-inset">
         <div className="max-w-2xl mx-auto tablet-max-width">
+          {/* Back Button - Exit module */}
+          {onBack && (
+            <button
+              onClick={handleBack}
+              className="flex items-center gap-2 text-white/70 hover:text-white mb-4 py-2 px-3 rounded-lg hover:bg-white/10 transition-colors"
+            >
+              <ArrowLeft size={20} />
+              <span className="text-sm font-medium">MB Home</span>
+            </button>
+          )}
+          
           <div className="text-center mb-8">
             <div className="inline-block p-6 bg-gradient-to-r from-orange-500 to-red-600 rounded-full mb-4">
               <Flame className="text-white" size={48} />
@@ -868,6 +897,15 @@ const FitnessWorkout = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-4 md:p-6 safe-area-inset">
         <div className="max-w-5xl mx-auto tablet-max-width">
+          {/* Back Button - Goes to setup screen */}
+          <button
+            onClick={handleBack}
+            className="flex items-center gap-2 text-white/70 hover:text-white mb-4 py-2 px-3 rounded-lg hover:bg-white/10 transition-colors"
+          >
+            <ArrowLeft size={20} />
+            <span className="text-sm font-medium">Back to Move Your Body</span>
+          </button>
+          
           <div className="flex justify-between items-center mb-6">
             <div className="text-white">
               <div className="text-sm opacity-70">Round {currentRound} of {totalRounds}</div>
@@ -938,9 +976,19 @@ const FitnessWorkout = () => {
   // Rest Screen
   if (screen === 'rest') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4 safe-area-inset">
-        <div className="text-center">
-          <h2 className="text-4xl font-bold text-white mb-6">Rest</h2>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 safe-area-inset">
+        {/* Back Button - Goes to setup screen */}
+        <button
+          onClick={handleBack}
+          className="flex items-center gap-2 text-white/70 hover:text-white mb-4 py-2 px-3 rounded-lg hover:bg-white/10 transition-colors"
+        >
+          <ArrowLeft size={20} />
+          <span className="text-sm font-medium">Back to Move Your Body</span>
+        </button>
+        
+        <div className="flex items-center justify-center min-h-[80vh]">
+          <div className="text-center">
+            <h2 className="text-4xl font-bold text-white mb-6">Rest</h2>
           <div className="text-9xl font-bold text-white mb-12 mt-8">
             {restTimeRemaining}
           </div>
@@ -955,6 +1003,7 @@ const FitnessWorkout = () => {
               Skip Rest
             </button>
           </div>
+          </div>
         </div>
       </div>
     );
@@ -963,11 +1012,21 @@ const FitnessWorkout = () => {
   // Complete Screen
   if (screen === 'complete') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-slate-900 p-6 flex items-center justify-center safe-area-inset">
-        <div className="max-w-2xl w-full tablet-max-width bg-white/10 backdrop-blur-lg rounded-3xl p-8 shadow-2xl text-center">
-          <div className="inline-block p-6 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-full mb-6">
-            <Trophy className="text-white" size={64} />
-          </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-slate-900 p-6 safe-area-inset">
+        {/* Back Button - Goes to setup screen */}
+        <button
+          onClick={handleBack}
+          className="flex items-center gap-2 text-white/70 hover:text-white mb-4 py-2 px-3 rounded-lg hover:bg-white/10 transition-colors"
+        >
+          <ArrowLeft size={20} />
+          <span className="text-sm font-medium">Back to Move Your Body</span>
+        </button>
+        
+        <div className="flex items-center justify-center min-h-[80vh]">
+          <div className="max-w-2xl w-full tablet-max-width bg-white/10 backdrop-blur-lg rounded-3xl p-8 shadow-2xl text-center">
+            <div className="inline-block p-6 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-full mb-6">
+              <Trophy className="text-white" size={64} />
+            </div>
           
           <h1 className="text-5xl font-bold text-white mb-4">Workout Complete!</h1>
           <p className="text-2xl text-white/80 mb-8">You crushed it, bro! 💪</p>
@@ -995,6 +1054,7 @@ const FitnessWorkout = () => {
               <RotateCcw size={20} />
               Do Another Workout
             </button>
+          </div>
           </div>
         </div>
       </div>

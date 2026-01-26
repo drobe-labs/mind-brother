@@ -658,7 +658,7 @@ export default function BetaTesterAgreement({ onClose, onAccept }: BetaTesterAgr
             <section className="bg-green-50 border border-green-200 rounded-lg p-6 mt-8">
               <h2 className="text-xl font-semibold text-green-900 mb-3">THANK YOU FOR BETA TESTING!</h2>
               <p className="text-green-800 mb-4">
-                Your participation helps us build a better mental wellness platform for Black and Brown men. We appreciate your time, feedback, and patience as we work to create something meaningful together.
+                Your participation helps us build a better mental wellness platform for men. We appreciate your time, feedback, and patience as we work to create something meaningful together.
               </p>
               <p className="text-sm text-green-700">
                 <strong>Questions?</strong> Email beta@mindbrother.com

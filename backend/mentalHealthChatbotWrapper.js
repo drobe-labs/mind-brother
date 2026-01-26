@@ -453,7 +453,7 @@ You matter, and there are people who want to help you through this. Can you reac
    * This prompt is the same for every classification call, so we cache it.
    */
   getClassificationSystemPrompt() {
-    return `You are a mental health AI assistant specializing in message classification for Black and Brown men.
+    return `You are a mental health AI assistant specializing in message classification for men seeking mental health support.
 
 **Categories:**
 1. CRISIS - Suicidal thoughts, self-harm, immediate danger

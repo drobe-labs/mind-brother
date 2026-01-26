@@ -1,5 +1,5 @@
 // Default Mental Health Resources for Mind Brother
-// Culturally relevant resources for Black and Brown men
+// Culturally relevant resources for men seeking mental health support
 
 const defaultResources = [
   // CRISIS RESOURCES
@@ -41,7 +41,7 @@ const defaultResources = [
   {
     id: 'therapy_inclusivetherapists',
     title: 'Inclusive Therapists',
-    description: 'Directory of culturally-responsive mental health professionals specializing in serving Black Brown POC LGBTQ communities',
+    description: 'Directory of culturally-responsive mental health professionals specializing in serving diverse communities',
     category: 'mental_health',
     subcategory: 'therapy',
     url: 'https://www.inclusivetherapists.com',

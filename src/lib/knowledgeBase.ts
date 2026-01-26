@@ -228,7 +228,7 @@ export const mentalHealthKnowledge = [
   // ==================== TRAUMA AND PTSD ====================
   {
     category: "trauma",
-    content: "Trauma can result from combat, childhood abuse or neglect, assault (physical or sexual—more common in men than statistics show due to underreporting), accidents, disasters, and complex/repeated trauma. For Black and Brown men, racial trauma from experiences of racism and discrimination is also significant.",
+    content: "Trauma can result from combat, childhood abuse or neglect, assault (physical or sexual—more common in men than statistics show due to underreporting), accidents, disasters, and complex/repeated trauma. For men, racial trauma from experiences of racism and discrimination is also significant.",
     tags: ["trauma", "PTSD", "abuse", "assault", "racial trauma", "violence"]
   },
   {
@@ -360,7 +360,7 @@ export const mentalHealthKnowledge = [
   },
   {
     category: "cultural_affirming_care",
-    content: "Finding culturally affirming care: Look for therapists with understanding of racial trauma, awareness of cultural values, no need to explain basic aspects of your lived experience. Questions to ask: 'Do you have experience working with Black/Brown men?' 'Are you familiar with racial trauma?' Resources: Therapy for Black Girls/Black Men Heal directories.",
+    content: "Finding culturally affirming care: Look for therapists with understanding of racial trauma, awareness of cultural values, no need to explain basic aspects of your lived experience. Questions to ask: 'Do you have experience working with Black and Brown men?' 'Are you familiar with racial trauma?' Resources: Therapy for Black Girls/Black Men Heal directories.",
     tags: ["cultural", "therapy", "affirming care", "Black men", "resources"]
   },
   // ==================== SPIRITUALITY ====================
@@ -515,7 +515,7 @@ export const mentalHealthKnowledge = [
   // ==================== TRANSGENDER IDENTITY & GENDER DYSPHORIA ====================
   {
     category: "transgender_understanding",
-    content: "Gender dysphoria is the distress that occurs when someone's gender identity doesn't align with the sex they were assigned at birth. Being transgender is not a mental illness—it's a valid identity. The distress comes from the disconnect, not the identity itself. For Black and Brown trans men, there's often an intersection of racism, transphobia, and sometimes homophobia, along with potential cultural/familial rejection alongside societal discrimination.",
+    content: "Gender dysphoria is the distress that occurs when someone's gender identity doesn't align with the sex they were assigned at birth. Being transgender is not a mental illness—it's a valid identity. The distress comes from the disconnect, not the identity itself. For trans men, there's often an intersection of transphobia and sometimes homophobia, along with potential cultural/familial rejection alongside societal discrimination.",
     tags: ["transgender", "gender dysphoria", "trans", "identity", "gender identity", "LGBTQ"]
   },
   {
@@ -601,7 +601,7 @@ export const mentalHealthKnowledge = [
   // ==================== HOMOSEXUALITY & BISEXUALITY ====================
   {
     category: "sexual_orientation_understanding",
-    content: "Sexual orientation is about who you're attracted to (emotionally, romantically, sexually). Being gay, bisexual, or queer is a normal, healthy variation of human sexuality. Not a choice, not a phase, not something to 'fix.' For Black and Brown gay/bi men, there's navigation of the intersection of racism and homophobia, religious condemnation, hypermasculinity expectations, and HIV stigma.",
+    content: "Sexual orientation is about who you're attracted to (emotionally, romantically, sexually). Being gay, bisexual, or queer is a normal, healthy variation of human sexuality. Not a choice, not a phase, not something to 'fix.' For gay/bi men, there's navigation of religious condemnation, hypermasculinity expectations, and HIV stigma.",
     tags: ["gay", "bisexual", "sexual orientation", "LGBTQ", "homosexuality", "identity"]
   },
   {
@@ -626,7 +626,7 @@ export const mentalHealthKnowledge = [
   },
   {
     category: "gay_cultural_challenges",
-    content: "Cultural challenges for Black/Brown gay men: 'Homosexuality is a white thing' (it's not), 'You're not a real man if you're gay,' losing connection to culture/family/church, 'You're making us look bad' (respectability politics), HIV stigma ('All gay men have AIDS'), racism in gay community, homophobia in Black community. These intersecting pressures are real and valid to struggle with.",
+    content: "Cultural challenges for diverse gay men: 'Homosexuality is a white thing' (it's not), 'You're not a real man if you're gay,' losing connection to culture/family/church, 'You're making us look bad' (respectability politics), HIV stigma ('All gay men have AIDS'), racism in gay community, homophobia in Black community. These intersecting pressures are real and valid to struggle with.",
     tags: ["gay", "cultural", "Black", "racism", "homophobia", "LGBTQ", "community"]
   },
   {
@@ -697,7 +697,7 @@ export const mentalHealthKnowledge = [
   // ==================== SEXUAL HEALTH & STI PREVENTION ====================
   {
     category: "sti_overview",
-    content: "Sexual health includes STI prevention, testing, treatment, and overall sexual wellbeing. Good sexual health requires communication, consent, and regular medical care. For Black and Brown men, higher STI rates are due to systemic healthcare access issues, not behavior. HIV stigma prevents testing and treatment, and historical mistrust of healthcare (Tuskegee legacy) creates barriers.",
+    content: "Sexual health includes STI prevention, testing, treatment, and overall sexual wellbeing. Good sexual health requires communication, consent, and regular medical care. For men, higher STI rates are due to systemic healthcare access issues, not behavior. HIV stigma prevents testing and treatment, and historical mistrust of healthcare (Tuskegee legacy) creates barriers.",
     tags: ["STI", "sexual health", "prevention", "testing", "healthcare"]
   },
   {
@@ -813,7 +813,7 @@ export const mentalHealthKnowledge = [
   // ==================== SEXUAL TRAUMA & ASSAULT ====================
   {
     category: "sexual_trauma_understanding",
-    content: "Sexual trauma includes any unwanted sexual contact: rape, molestation, sexual assault, coercion, trafficking. Trauma occurs when the event overwhelms your ability to cope and leaves lasting psychological effects. For Black and Brown men: underreported and under-believed ('men can't be raped'), toxic masculinity prevents disclosure, fear that being assaulted 'makes you gay' (it doesn't), lack of male-specific resources.",
+    content: "Sexual trauma includes any unwanted sexual contact: rape, molestation, sexual assault, coercion, trafficking. Trauma occurs when the event overwhelms your ability to cope and leaves lasting psychological effects. For men: underreported and under-believed ('men can't be raped'), toxic masculinity prevents disclosure, fear that being assaulted 'makes you gay' (it doesn't), lack of male-specific resources.",
     tags: ["sexual trauma", "sexual assault", "rape", "trauma", "men", "survivors"]
   },
   {
@@ -894,7 +894,7 @@ export const mentalHealthKnowledge = [
   // ==================== CHILDHOOD SEXUAL ABUSE (MOLESTATION) ====================
   {
     category: "childhood_sexual_abuse_understanding",
-    content: "Child sexual abuse (CSA) is any sexual contact with a child by an adult or older child. Includes: touching, penetration, exposure, making child watch/participate in sexual acts, child pornography. Children cannot consent—it's always abuse. For Black and Brown boys: underreported, 'boys want it' myth prevents recognition, fear of being seen as weak or gay, cultural taboo against discussing sex/abuse.",
+    content: "Child sexual abuse (CSA) is any sexual contact with a child by an adult or older child. Includes: touching, penetration, exposure, making child watch/participate in sexual acts, child pornography. Children cannot consent—it's always abuse. For boys: underreported, 'boys want it' myth prevents recognition, fear of being seen as weak or gay, cultural taboo against discussing sex/abuse.",
     tags: ["childhood sexual abuse", "molestation", "CSA", "trauma", "survivors"]
   },
   {
@@ -960,7 +960,7 @@ export const mentalHealthKnowledge = [
   // ==================== INFIDELITY & BETRAYAL TRAUMA ====================
   {
     category: "infidelity_understanding",
-    content: "Infidelity is when a partner breaks the agreed-upon boundaries of the relationship (physical affair, emotional affair, sexting, porn if agreed off-limits). Betrayal trauma occurs when the person you trust most violates that trust. For Black and Brown men: 'Men cheat' stereotype normalizes infidelity, pressure to accept cheating without emotional reaction, public knowledge threatens masculinity.",
+    content: "Infidelity is when a partner breaks the agreed-upon boundaries of the relationship (physical affair, emotional affair, sexting, porn if agreed off-limits). Betrayal trauma occurs when the person you trust most violates that trust. For men: 'Men cheat' stereotype normalizes infidelity, pressure to accept cheating without emotional reaction, public knowledge threatens masculinity.",
     tags: ["infidelity", "cheating", "betrayal trauma", "relationships", "trust"]
   },
   {
@@ -1133,7 +1133,7 @@ export const mentalHealthKnowledge = [
   // ==================== LGBTQ+ & SEXUALITY CONVERSATIONAL GUIDELINES ====================
   {
     category: "lgbtq_sexuality_guidelines",
-    content: "Guidelines for LGBTQ+ and sexuality topics: NEVER judge—respond with acceptance. Affirm identity (trans, gay, bi, survivor). Be trauma-informed—don't ask for details unless offered, respect autonomy. Cultural sensitivity—acknowledge unique challenges for Black/Brown LGBTQ+ people, validate cultural/religious conflict. Safety first—assess for danger, provide crisis resources.",
+    content: "Guidelines for LGBTQ+ and sexuality topics: NEVER judge—respond with acceptance. Affirm identity (trans, gay, bi, survivor). Be trauma-informed—don't ask for details unless offered, respect autonomy. Cultural sensitivity—acknowledge unique challenges for diverse LGBTQ+ people, validate cultural/religious conflict. Safety first—assess for danger, provide crisis resources.",
     tags: ["LGBTQ", "guidelines", "affirming", "trauma-informed", "support"]
   },
   {
@@ -1153,7 +1153,7 @@ export const mentalHealthKnowledge = [
   },
   {
     category: "conversational_guidelines_core",
-    content: "Core conversational guidelines for LGBTQ+ and sexuality topics: NEVER JUDGE—whatever they disclose, respond with acceptance. 'There's nothing wrong with you.' 'You're not broken/dirty/less than.' AFFIRM IDENTITY—Trans? 'You are who you say you are.' Gay/bi? 'Your orientation is valid and natural.' Survivor? 'What happened to you wasn't your fault.' TRAUMA-INFORMED—don't ask for details unless they offer, respect autonomy. CULTURAL SENSITIVITY—acknowledge unique challenges for Black/Brown LGBTQ+ people. SAFETY FIRST—assess for danger, provide crisis resources.",
+    content: "Core conversational guidelines for LGBTQ+ and sexuality topics: NEVER JUDGE—whatever they disclose, respond with acceptance. 'There's nothing wrong with you.' 'You're not broken/dirty/less than.' AFFIRM IDENTITY—Trans? 'You are who you say you are.' Gay/bi? 'Your orientation is valid and natural.' Survivor? 'What happened to you wasn't your fault.' TRAUMA-INFORMED—don't ask for details unless they offer, respect autonomy. CULTURAL SENSITIVITY—acknowledge unique challenges for diverse LGBTQ+ people. SAFETY FIRST—assess for danger, provide crisis resources.",
     tags: ["guidelines", "LGBTQ", "conversational", "affirming", "trauma-informed"]
   },
   {
@@ -1699,7 +1699,7 @@ export const mentalHealthKnowledge = [
   // ==================== FATHERHOOD & PARENTING ====================
   {
     category: "fatherhood_understanding",
-    content: "Fatherhood is a core identity for many men and a major source of both joy and stress. The transition to fatherhood represents a profound identity shift. For Black and Brown fathers: Provider pressure is amplified, police fear for children, breaking generational cycles, teaching cultural pride while preparing for racism. Your presence matters—show up physically AND emotionally.",
+    content: "Fatherhood is a core identity for many men and a major source of both joy and stress. The transition to fatherhood represents a profound identity shift. For fathers: Provider pressure is real, breaking generational cycles matters, teaching values while preparing children for challenges. Your presence matters—show up physically AND emotionally.",
     tags: ["fatherhood", "parenting", "identity", "Black fathers", "fathers"]
   },
   {
@@ -1729,12 +1729,12 @@ export const mentalHealthKnowledge = [
   },
   {
     category: "fatherhood_provider_pressure",
-    content: "Provider pressure for Black/Brown fathers: Amplified by cultural expectations, systemic barriers, and historical context. Pressure to provide financially can cause: Overwork, stress, missing time with kids, feeling like failure if struggling. Reality: Presence matters more than perfect finances. Kids need you more than they need things. Financial struggle doesn't make you a bad father. Model resilience, not perfection. Your worth as father isn't your salary.",
+    content: "Provider pressure for diverse fathers: Amplified by cultural expectations, systemic barriers, and historical context. Pressure to provide financially can cause: Overwork, stress, missing time with kids, feeling like failure if struggling. Reality: Presence matters more than perfect finances. Kids need you more than they need things. Financial struggle doesn't make you a bad father. Model resilience, not perfection. Your worth as father isn't your salary.",
     tags: ["fatherhood", "provider", "pressure", "finances", "Black fathers"]
   },
   {
     category: "fatherhood_police_fear",
-    content: "Police fear for Black/Brown fathers: Legitimate fear for children's safety. 'The Talk' about police interaction is necessary and heartbreaking. Age 10-12, ongoing conversation. Teach: Hands visible, no sudden moves, know rights but prioritize staying alive, not his fault if stopped. This is trauma—acknowledge it. You're protecting them while teaching them to navigate an unfair world. Your fear is valid. Your love is protective.",
+    content: "Police fear for diverse fathers: Legitimate fear for children's safety. 'The Talk' about police interaction is necessary and heartbreaking. Age 10-12, ongoing conversation. Teach: Hands visible, no sudden moves, know rights but prioritize staying alive, not his fault if stopped. This is trauma—acknowledge it. You're protecting them while teaching them to navigate an unfair world. Your fear is valid. Your love is protective.",
     tags: ["fatherhood", "police", "racism", "safety", "The Talk", "Black fathers"]
   },
   {
@@ -2100,7 +2100,7 @@ export const mentalHealthKnowledge = [
   },
   {
     category: "losing_child_understanding",
-    content: "Losing a child understanding: Losing a child is considered the worst loss a person can endure. It's 'unnatural'—parents aren't supposed to outlive their children. It shatters your world, your identity, your future. For Black and Brown fathers: Gun violence, police killings, health disparities (infant mortality higher for Black babies), incarceration taking children away, poverty-related deaths, losing child to streets, gangs. CRITICAL NOTE: This is the most devastating grief. If someone discloses this, handle with extreme care. Monitor for suicidal ideation closely.",
+    content: "Losing a child understanding: Losing a child is considered the worst loss a person can endure. It's 'unnatural'—parents aren't supposed to outlive their children. It shatters your world, your identity, your future. For fathers: Violence, health disparities, incarceration taking children away, poverty-related deaths, losing child to streets, gangs. CRITICAL NOTE: This is the most devastating grief. If someone discloses this, handle with extreme care. Monitor for suicidal ideation closely.",
     tags: ["losing child", "grief", "devastating", "Black fathers", "crisis"]
   },
   {
@@ -2206,7 +2206,7 @@ export const mentalHealthKnowledge = [
   // ==================== INCARCERATION & CRIMINAL JUSTICE ====================
   {
     category: "incarceration_understanding",
-    content: "Incarceration understanding: Mass incarceration disproportionately affects Black and Brown men. Most incarcerated men experienced significant trauma BEFORE incarceration: poverty, abuse, violence, inadequate education, systemic racism. Many crimes are survival-driven, not malicious. For Black and Brown men: Mass incarceration legacy (War on Drugs targeted Black communities), poverty + lack of opportunities = survival crimes, school-to-prison pipeline, over-policing in Black/Brown neighborhoods, harsher sentences for same crimes as white defendants.",
+    content: "Incarceration understanding: Mass incarceration disproportionately affects Black and Brown men. Most incarcerated men experienced significant trauma BEFORE incarceration: poverty, abuse, violence, inadequate education, systemic racism. Many crimes are survival-driven, not malicious. For Black and Brown men: Mass incarceration legacy (War on Drugs targeted Black communities), poverty + lack of opportunities = survival crimes, school-to-prison pipeline, over-policing in diverse neighborhoods, harsher sentences for same crimes as white defendants.",
     tags: ["incarceration", "criminal justice", "Black men", "systemic", "trauma"]
   },
   {
@@ -2386,7 +2386,7 @@ export const mentalHealthKnowledge = [
   },
   {
     category: "police_trauma",
-    content: "Police trauma: Brutality, harassment, fear, racial profiling, wrongful arrests, violence. Black and Brown men live with constant police threat. Experiences: Stop and frisk, 'driving while Black,' excessive force, beatings, shootings, wrongful arrests, false charges, humiliation, dehumanization, killed by police (or fear of it). Impact: PTSD (hypervigilance, panic at sirens), distrust of authority, teaching children fear of police, racial trauma + personal trauma, anger, grief, helplessness. Therapeutic response: 'Police trauma is real.' Racial trauma therapy. Community healing spaces. Advocacy for police reform.",
+    content: "Police trauma: Brutality, harassment, fear, racial profiling, wrongful arrests, violence. men live with constant police threat. Experiences: Stop and frisk, 'driving while Black,' excessive force, beatings, shootings, wrongful arrests, false charges, humiliation, dehumanization, killed by police (or fear of it). Impact: PTSD (hypervigilance, panic at sirens), distrust of authority, teaching children fear of police, racial trauma + personal trauma, anger, grief, helplessness. Therapeutic response: 'Police trauma is real.' Racial trauma therapy. Community healing spaces. Advocacy for police reform.",
     tags: ["police trauma", "racial trauma", "PTSD", "Black men", "violence"]
   },
   {
@@ -2537,7 +2537,7 @@ export const mentalHealthKnowledge = [
   },
   {
     category: "childhood_exposure_dv_understanding",
-    content: "Childhood exposure to domestic violence: Growing up witnessing domestic violence—seeing, hearing, or being aware of one parent abusing another—is a form of child abuse. It causes lasting trauma. For Black and Brown children: Higher exposure rates due to systemic stressors, normalizes violence in relationships, PTSD/anxiety/depression common, repeating cycle as adults (victim or perpetrator). What it looks like: Direct witnessing (seeing father hit mother, watching police arrive, intervening to protect parent, finding injured parent, seeing aftermath). Indirect exposure (hearing violence through walls, tension in household, sudden silence or screaming, aftermath without seeing incident).",
+    content: "Childhood exposure to domestic violence: Growing up witnessing domestic violence—seeing, hearing, or being aware of one parent abusing another—is a form of child abuse. It causes lasting trauma. For children: Higher exposure rates due to systemic stressors, normalizes violence in relationships, PTSD/anxiety/depression common, repeating cycle as adults (victim or perpetrator). What it looks like: Direct witnessing (seeing father hit mother, watching police arrive, intervening to protect parent, finding injured parent, seeing aftermath). Indirect exposure (hearing violence through walls, tension in household, sudden silence or screaming, aftermath without seeing incident).",
     tags: ["childhood exposure", "domestic violence", "trauma", "witnessing", "children"]
   },
   {
@@ -2764,7 +2764,7 @@ export const mentalHealthKnowledge = [
   },
   {
     category: "combat_trauma_veterans",
-    content: "Combat trauma (veterans): PTSD from military service—combat, IEDs, witnessing death, moral injury. For Black/Brown veterans: Fight for country that discriminates, higher rates of PTSD, less access to VA care, military sexual trauma (men too), reintegration challenges. Symptoms: Flashbacks, hypervigilance, survivor guilt, moral injury ('I killed people'), difficulty reintegrating. Treatment: VA services, veteran-specific therapy (CPT, PE), peer support, service dogs. You served. You deserve care. Combat trauma is real trauma.",
+    content: "Combat trauma (veterans): PTSD from military service—combat, IEDs, witnessing death, moral injury. For diverse veterans: Fight for country that discriminates, higher rates of PTSD, less access to VA care, military sexual trauma (men too), reintegration challenges. Symptoms: Flashbacks, hypervigilance, survivor guilt, moral injury ('I killed people'), difficulty reintegrating. Treatment: VA services, veteran-specific therapy (CPT, PE), peer support, service dogs. You served. You deserve care. Combat trauma is real trauma.",
     tags: ["combat trauma", "PTSD", "veterans", "military", "moral injury", "VA"]
   },
   {
@@ -2774,12 +2774,12 @@ export const mentalHealthKnowledge = [
   },
   {
     category: "witnessing_violence_community",
-    content: "Witnessing violence (community): Seeing shootings, stabbings, death in your community. Common in over-policed Black/Brown neighborhoods. Impact: PTSD (flashbacks, nightmares, hypervigilance), survivor guilt, numbing (so much violence, you stop feeling), expectation of early death. Treatment: Trauma therapy, community healing, addressing systemic violence. Witnessing violence is trauma. Your pain is valid. Community violence is not normal—it's traumatic.",
+    content: "Witnessing violence (community): Seeing shootings, stabbings, death in your community. Common in over-policed diverse neighborhoods. Impact: PTSD (flashbacks, nightmares, hypervigilance), survivor guilt, numbing (so much violence, you stop feeling), expectation of early death. Treatment: Trauma therapy, community healing, addressing systemic violence. Witnessing violence is trauma. Your pain is valid. Community violence is not normal—it's traumatic.",
     tags: ["witnessing violence", "community violence", "PTSD", "trauma", "Black men", "police"]
   },
   {
     category: "medical_trauma",
-    content: "Medical trauma: Traumatic medical experiences—painful procedures, medical neglect, misdiagnosis, near-death, chronic illness diagnosis. For Black/Brown men: Medical racism (pain dismissed, experiments without consent—Tuskegee legacy), mistrust of doctors. Impact: PTSD from medical settings, avoidance of healthcare, anxiety about body. Healing: Trauma-informed medical providers, therapy, patient advocacy. Medical trauma is real. Your mistrust is valid. You deserve trauma-informed care.",
+    content: "Medical trauma: Traumatic medical experiences—painful procedures, medical neglect, misdiagnosis, near-death, chronic illness diagnosis. For Black and Brown men: Medical racism (pain dismissed, experiments without consent—Tuskegee legacy), mistrust of doctors. Impact: PTSD from medical settings, avoidance of healthcare, anxiety about body. Healing: Trauma-informed medical providers, therapy, patient advocacy. Medical trauma is real. Your mistrust is valid. You deserve trauma-informed care.",
     tags: ["medical trauma", "medical racism", "Tuskegee", "healthcare", "trauma", "Black men"]
   },
   {
@@ -2830,7 +2830,7 @@ export const mentalHealthKnowledge = [
   },
   {
     category: "medical_trauma_mistrust",
-    content: "Medical trauma and mistrust: For Black/Brown men: Tuskegee Syphilis Study, Henrietta Lacks, medical experimentation, pain dismissed ('Black people feel less pain'—racist myth). Impact: Avoid doctors, delay care, mistrust diagnoses. Healing: Find culturally competent, trauma-informed providers. Your mistrust is valid. Medical racism is real. You deserve providers who believe you, respect you, and treat you with dignity.",
+    content: "Medical trauma and mistrust: For Black and Brown men: Tuskegee Syphilis Study, Henrietta Lacks, medical experimentation, pain dismissed ('Black people feel less pain'—racist myth). Impact: Avoid doctors, delay care, mistrust diagnoses. Healing: Find culturally competent, trauma-informed providers. Your mistrust is valid. Medical racism is real. You deserve providers who believe you, respect you, and treat you with dignity.",
     tags: ["medical trauma", "medical racism", "Tuskegee", "mistrust", "healthcare", "Black men"]
   },
   {

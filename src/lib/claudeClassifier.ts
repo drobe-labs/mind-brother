@@ -1,7 +1,7 @@
 // Claude-Powered Message Classification
 // Uses Claude's intelligence for disambiguation instead of brittle regex
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://mind-brother-production.up.railway.app';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://192.168.5.180:3001';
 
 export interface ClaudeClassificationResult {
   category: 'CRISIS' | 'EMPLOYMENT' | 'RELATIONSHIP' | 'MENTAL_HEALTH' | 'TECH_ISSUE' | 'GENERAL';
@@ -299,7 +299,7 @@ Classify this message into ONE primary category. Pay special attention to ambigu
 - If user is responding to a question from Amani, factor that into classification
 - Confidence should be 0.9+ for clear cases, 0.6-0.8 for ambiguous
 - Emotional intensity: 10 = crisis, 8-9 = severe distress, 5-7 = moderate, 1-4 = mild
-- Be culturally sensitive (user is a Black/Brown man in a mental health app)
+- Be culturally sensitive (user is a man seeking mental health support)
 
 Respond with ONLY the JSON object, no other text.`;
 

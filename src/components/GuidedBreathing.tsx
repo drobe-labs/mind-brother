@@ -119,9 +119,10 @@ const techniques: BreathingTechnique[] = [
 
 interface GuidedBreathingProps {
   initialExercise?: string;
+  onBack?: () => void; // Callback to exit the module entirely
 }
 
-const GuidedBreathing = ({ initialExercise }: GuidedBreathingProps) => {
+const GuidedBreathing = ({ initialExercise, onBack }: GuidedBreathingProps) => {
   const [screen, setScreen] = useState<'select' | 'breathing' | 'complete'>('select');
   const [selectedTechnique, setSelectedTechnique] = useState<BreathingTechnique>(
     techniques.find(t => t.id === initialExercise) || techniques[0]
@@ -136,9 +137,15 @@ const GuidedBreathing = ({ initialExercise }: GuidedBreathingProps) => {
   const audioCache = useRef<Map<string, Blob>>(new Map());
   const speechSynthRef = useRef<SpeechSynthesis | null>(null);
   const isRunningRef = useRef(false);
+  const isPausedRef = useRef(false); // ✅ Use ref for pause state in async loops
   const abortControllerRef = useRef<AbortController | null>(null);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const isMountedRef = useRef(true); // Track if component is mounted
+  
+  // Keep the ref in sync with state
+  useEffect(() => {
+    isPausedRef.current = isPaused;
+  }, [isPaused]);
 
   // Cleanup function to stop all audio
   const stopAllAudio = () => {
@@ -195,7 +202,7 @@ const GuidedBreathing = ({ initialExercise }: GuidedBreathingProps) => {
 
   // Generate speech via backend proxy
   const generateSpeech = async (text: string): Promise<Blob> => {
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://mind-brother-production.up.railway.app';
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://192.168.5.180:3001';
     
     abortControllerRef.current = new AbortController();
     
@@ -433,8 +440,8 @@ const GuidedBreathing = ({ initialExercise }: GuidedBreathingProps) => {
     for (let i = seconds; i > 0; i--) {
       if (!isRunningRef.current) break;
       
-      // Wait for pause to be lifted
-      while (isPaused && isRunningRef.current) {
+      // Wait for pause to be lifted - use ref to get current value
+      while (isPausedRef.current && isRunningRef.current) {
         await delay(100);
       }
       
@@ -543,6 +550,20 @@ const GuidedBreathing = ({ initialExercise }: GuidedBreathingProps) => {
     }
   };
 
+  // Handle back navigation based on current screen
+  const handleBack = () => {
+    if (screen === 'select') {
+      // On select screen, exit the module entirely
+      if (onBack) {
+        onBack();
+      }
+    } else {
+      // On breathing or complete screen, go back to select
+      stopBreathing();
+      setScreen('select');
+    }
+  };
+
   // Selection Screen - Brand Colors with 2x2 Grid
   if (screen === 'select') {
     return (
@@ -551,6 +572,17 @@ const GuidedBreathing = ({ initialExercise }: GuidedBreathingProps) => {
         style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #4470AD 50%, #233C67 100%)' }}
       >
         <div className="max-w-lg mx-auto tablet-max-width">
+          {/* Back Button - Exit module */}
+          {onBack && (
+            <button
+              onClick={handleBack}
+              className="flex items-center gap-2 text-white/70 hover:text-white mb-4 py-2 px-3 rounded-lg hover:bg-white/10 transition-colors"
+            >
+              <ArrowLeft size={20} />
+              <span className="text-sm font-medium">MB Home</span>
+            </button>
+          )}
+          
           {/* Header - Compact layout with text directly under memoji */}
           <div className="text-center mb-1 pt-0">
             <div className="inline-block">
@@ -667,6 +699,15 @@ const GuidedBreathing = ({ initialExercise }: GuidedBreathingProps) => {
         className="min-h-screen p-4 relative safe-area-inset"
         style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #233C67 50%, #1a1a2e 100%)' }}
       >
+        {/* Back Button - Goes to select screen */}
+        <button
+          onClick={handleBack}
+          className="absolute top-4 left-4 flex items-center gap-2 text-white/70 hover:text-white py-2 px-3 rounded-lg hover:bg-white/10 transition-colors z-20"
+        >
+          <ArrowLeft size={20} />
+          <span className="text-sm font-medium">Back to Guided Workout</span>
+        </button>
+        
         {/* Voice indicator */}
         {(isSpeaking || isPreloading) && (
           <div className="breathing-voice-indicator" style={{ background: 'rgba(68, 112, 173, 0.95)' }}>
@@ -796,6 +837,15 @@ const GuidedBreathing = ({ initialExercise }: GuidedBreathingProps) => {
         className="min-h-screen p-6 safe-area-inset"
         style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #4470AD 50%, #233C67 100%)' }}
       >
+        {/* Back Button - Goes to select screen */}
+        <button
+          onClick={handleBack}
+          className="flex items-center gap-2 text-white/70 hover:text-white mb-4 py-2 px-3 rounded-lg hover:bg-white/10 transition-colors"
+        >
+          <ArrowLeft size={20} />
+          <span className="text-sm font-medium">Back to Guided Workout</span>
+        </button>
+        
         <div className="max-w-lg mx-auto tablet-max-width flex flex-col items-center justify-center min-h-[80vh] text-center">
           {/* Success memoji */}
           <div className="mb-6">

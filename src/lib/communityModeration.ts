@@ -1,376 +1,363 @@
-// communityModeration.ts
-// Community Guardrails & Auto-Moderation System for Mental Health App
+// Enhanced Community Moderation System
+// Comprehensive safety patterns for mental health community
 
-/**
- * CRITICAL KEYWORD DETECTION
- * Posts containing these keywords are immediately blocked
- */
-export const criticalSuicideKeywords = [
-  // Hanging methods
-  /\b(hang|hanging) (?:myself|yourself)\b/i,
-  /\b(?:rope|noose).*neck/i,
+export interface ModerationResult {
+  shouldBlock: boolean;
+  shouldFlag: boolean;
+  severity: 'none' | 'low' | 'medium' | 'high' | 'critical';
+  reasons: string[];
+  triggerWarnings: string[];
+  crisisResourcesNeeded: boolean;
+  detectedPatterns: string[];
+}
+
+// ============================================================================
+// CRITICAL PATTERNS - AUTO BLOCK
+// ============================================================================
+
+const CRITICAL_SUICIDE_KEYWORDS = [
+  // Method-seeking
+  /how\s+(?:to|do\s+i|can\s+i)\s+(?:kill|end)\s+(?:myself|my\s+life)/gi,
+  /best\s+way\s+to\s+(?:die|kill\s+myself|commit\s+suicide)/gi,
+  /easiest\s+way\s+to\s+(?:die|end\s+it)/gi,
   
-  // Overdose methods
-  /\bov[e]?rdose on\b/i,
-  /\b(?:take|taking|take too many) (?:too many )?(?:pills|meds|medication|drugs)\b/i,
+  // Specific methods
+  /hanging\s+myself/gi,
+  /overdose\s+on/gi,
+  /jump\s+(?:off|from)/gi,
+  /gun\s+to\s+(?:my\s+)?head/gi,
+  /slit\s+my\s+wrists/gi,
+  /carbon\s+monoxide/gi,
   
-  // Cutting methods
-  /\bcut (?:my|your) wrists\b/i,
-  /\bcut (?:my|your) (?:throat|neck|veins|arteries)\b/i,
-  
-  // Jumping methods
-  /\bjump(?:ing)? off (?:a |the )?(?:bridge|building|cliff|roof|balcony|window)\b/i,
-  /\bjump(?:ing)? (?:in front of|in front|onto) (?:a |the )?(?:train|car|bus|truck|traffic)\b/i,
-  
-  // Gun/firearm methods (expanded to catch more variations)
-  /\b(?:gun|firearm|pistol|rifle|shotgun|revolver|handgun) to (?:my|your) (?:head|brain|temple)\b/i,
-  /\b(?:use|using|shoot|shooting) (?:a |an |the )?(?:gun|firearm|pistol|rifle|shotgun|revolver|handgun)\b/i,
-  /\b(?:put|putting|place|placing) (?:a |an )?bullet (?:in|through|into) (?:my|your) (?:head|brain|skull|temple)\b/i,
-  /\b(?:shoot|shooting|blow) (?:my|your|myself|yourself) (?:in|with) (?:the )?(?:head|brain|skull|temple)\b/i,
-  /\b(?:bullet|gunshot) (?:in|through|into) (?:my|your) (?:head|brain|skull)\b/i,
-  /\bpull (?:the )?trigger (?:on myself|on yourself|on my|on your)/i,
-  // Catch combinations of gun/bullet with brain/head (even if separated by other words)
-  /\b(?:gun|firearm|pistol|rifle|bullet).*\b(?:brain|head|skull|temple)\b/i,
-  /\b(?:brain|head|skull|temple).*\b(?:gun|firearm|pistol|rifle|bullet)\b/i,
-  // Catch "bullet" with "brain" in same context
-  /\bbullet.*brain|brain.*bullet/i,
-  
-  // Method-seeking and "how to" requests (block)
-  /\b(?:how (?:to|do i)|tips|advice|suggest(?:ion|ions)?|best way) (?:to )?(?:kill myself|end my life|commit suicide|die)\b/i,
-  // Quick/painless requests (block)
-  /\b(?:quick|fast|painless|without pain|easy) (?:way|method)? (?:to )?(?:kill myself|end my life|commit suicide|die)\b/i,
-  
-  // Carbon monoxide
-  /\bcarbon monoxide\b/i,
-  /\b(?:exhaust|car|garage).*(?:fumes|monoxide|asphyxiat)/i,
-  
-  // Planning and timing
-  /\b(?:plan|planning|planned|going to|gonna) (?:to |my |tonight |today |this week |soon )?(?:kill myself|suicide|end (?:my )?life|do it|end it)\b/i,
-  /\b(?:tonight|today|this week|soon|right now) (?:i'?m|ill?|I will|gonna) (?:kill myself|end it|do it|end my life)\b/i,
-  /\b(?:wrote|writing|written|left) (?:a |my )?(?:suicide )?note\b/i,
-  
-  // Goodbye statements
-  /\b(?:say|saying|said|tell|telling|told) (?:goodbye|good bye).*\b(?:forever|last time|one last|for good)\b/i,
-  
-  // Hopelessness combined with action language
-  /\bno (?:reason|point|use) (?:to |in )(?:liv(?:e|ing)|go(?:ing)? on|trying|continuing)\b/i,
-  /\bworld (?:would be |is |will be )better (?:off )?without me\b/i,
-  /\bcan'?t (?:take|do|handle|cope) (?:this|it|anymore)\b.*\b(?:end|over|done|finish)\b/i,
-  
-  // Explicit suicide method combinations
-  /\b(?:kill|killing|end|ending) (?:my|your) (?:life|myself|yourself)\b/i,
-  /\b(?:way|method|plan) (?:to )?(?:kill myself|end my life|commit suicide|die)\b/i,
-  
-  // Dangerous substance combinations
-  /\b(?:drink|drinking|swallow|swallowing) (?:bleach|poison|chemicals|pills)\b/i,
+  // Immediate intent
+  /(?:going|gonna|about)\s+to\s+(?:kill|end)\s+(?:myself|it\s+all)/gi,
+  /tonight\s+(?:is|will\s+be)\s+(?:the\s+night|my\s+last)/gi,
+  /goodbye\s+(?:world|everyone|cruel\s+world)/gi,
+  /this\s+is\s+(?:it|the\s+end|goodbye)/gi,
+  /writing\s+(?:my|a)\s+(?:suicide\s+)?note/gi,
 ];
 
-export const criticalSelfHarmKeywords = [
-  // Cutting methods
-  /\bcut(?:ting)? (?:my|your|myself|yourself)\b/i,
-  /\bcut(?:ting)? (?:my|your) (?:skin|arms|legs|wrists|thighs)\b/i,
-  /\b(?:razor|knife|blade|sharp|scissors|glass)\b.*\b(?:cut|cutting|slice|slicing|skin)\b/i,
-  /\b(?:want|need|going to|gonna) (?:to )?(?:cut|cutting|slice|hurt) (?:my|your|myself|yourself)\b/i,
-  /\bwhere (?:to |should I )?(?:cut|make cuts)\b/i,
-  /\bhow (?:to |do (?:you|i) |deep )?(?:cut|cutting|self[- ]?harm)\b/i,
+const CRITICAL_SELF_HARM_KEYWORDS = [
+  // Cutting/burning
+  /how\s+(?:deep|much)\s+to\s+cut/gi,
+  /cutting\s+(?:deeper|until)/gi,
+  /burn\s+myself\s+with/gi,
+  /razor\s+blade/gi,
   
-  // Burning methods
-  /\bbur(?:n|ning) (?:my|your|myself|yourself)\b/i,
-  /\b(?:lighter|matches|cigarette|candle).*(?:burn|burning|skin)\b/i,
-  
-  // Hitting/harming
-  /\bhit(?:ting)? (?:my|your|myself|yourself)\b/i,
-  /\b(?:punch|punching|slap|slapping) (?:my|your|myself|yourself)\b/i,
-  
-  // Self-harm terminology
-  /\b(?:self[- ]?harm|SI|self injury) (?:urges|thoughts|methods|how)\b/i,
-  /\brelapse(?:d|ing)?\b.*\b(?:cut|cutting|self[- ]?harm|SI)\b/i,
-  
-  // Combination phrases indicating active self-harm planning
-  /\b(?:going to|gonna|plan to|planning to) (?:hurt|harm|cut|burn|hit) (?:my|your|myself|yourself)\b/i,
+  // Method details
+  /where\s+to\s+cut\s+(?:to|for)/gi,
+  /best\s+place\s+to\s+cut/gi,
 ];
 
-/**
- * HIGH-RISK KEYWORD DETECTION
- * Posts are allowed but flagged for immediate review
- */
-export const highRiskKeywords = [
-  /\bsuicidal(?:| thoughts| ideation)\b/i,
-  /\bwant (?:to |2 )(?:die|kill myself)\b/i,
-  /\bwish i (?:was|were) dead\b/i,
-  /\bdon'?t want to (?:be|live) (?:here|anymore)\b/i,
-  /\bgive up on life\b/i,
-  /\bthinking about (?:hurting|harming) myself\b/i,
-  /\burges to (?:cut|hurt|harm)\b/i,
-  /\bself[- ]?harm\b/i,
-  /\bcan'?t (?:take|handle|cope) (?:this|it|anymore)\b/i,
-  /\bcompletely (?:hopeless|helpless)\b/i,
-  /\b(?:severe|extreme|unbearable) (?:pain|depression|anxiety)\b/i,
-  /\bbreakdown\b/i,
-  /\bcrisis\b/i,
+const HARASSMENT_PATTERNS = [
+  // Direct attacks
+  /kill\s+yourself/gi,
+  /you\s+should\s+(?:die|end\s+it)/gi,
+  /nobody\s+(?:cares|likes|wants)\s+you/gi,
+  /world\s+(?:would\s+be\s+)?better\s+without\s+you/gi,
+  
+  // Severe bullying
+  /you'?re\s+(?:worthless|pathetic|useless|a\s+waste)/gi,
+  /go\s+die/gi,
+  /kys/gi, // "kill yourself" acronym
 ];
 
-/**
- * HARASSMENT & BULLYING DETECTION
- * Content that attacks, shames, or targets individuals
- */
-export const harassmentPatterns = [
-  // Direct personal attacks
-  /\byou'?re (?:a |an )?(?:idiot|stupid|pathetic|waste|loser|attention[- ]?seeking|crazy|insane)\b/i,
-  /\b(?:you|your) (?:are|need to|should) (?:shut up|go away|kill yourself|fuck off)\b/i,
-  
-  // Toxic positivity (dismissive, minimizing)
-  /\b(?:just|simply) (?:think positive|be happy|try harder|get over it|stop being|snap out of it|cheer up|be grateful)\b/i,
-  /\b(?:everyone|we all|everybody) (?:feels?|goes through|has) (?:this|that|depression|anxiety)\b.*\b(?:deal with it|suck it up|just deal|get over)\b/i,
-  
-  // Invalidation
-  /\b(?:you don't|not really|probably not|doubt you|you're not) (?:have|need|really|actually) (?:depression|anxiety|PTSD|trauma|mental illness)\b/i,
-  /\bthat'?s not (?:real|actual|true|really) (?:depression|anxiety|PTSD|trauma|mental illness)\b/i,
-  /\b(?:it's|that's) (?:all in your head|not that bad|just drama|attention seeking)\b/i,
-  
-  // Gatekeeping mental health
-  /\b(?:you can't|don't|shouldn't) (?:say|talk about|claim you have) (?:depression|anxiety|PTSD|trauma)\b/i,
-  
-  // Dismissive advice when not asked
-  /\b(?:have you tried|why don't you|you should|just) (?:yoga|meditation|exercise|prayer|vitamins)\b.*\b(?:that's all|that's it|that fixes)\b/i,
-];
+// ============================================================================
+// DISGUISED PATTERNS - NEW FEATURE #1
+// ============================================================================
 
-/**
- * SPAM & SCAM DETECTION
- */
-export const spamPatterns = [
-  // Multiple URLs (excessive linking)
-  /https?:\/\/.*https?:\/\/.*https?:\/\//i,
-  
-  // Suspicious link shorteners or promotional language
-  /\b(?:bit\.ly|tinyurl|short\.link|click here|link in bio|DM me for)\b/i,
-  
-  // MLM/Pyramid scheme language
-  /\b(?:work from home|make money|financial freedom|be your own boss|MLM|multi[- ]?level)\b/i,
-  
-  // Fake therapy/healing services
-  /\b(?:certified healer|quantum|energy healing|cure depression|eliminate anxiety|100% guaranteed)\b.*\b(?:book now|contact me|DM|email|click)\b/i,
-  
-  // Pharmaceutical scams
-  /\b(?:buy (?:pills|meds|medication)|cheap (?:pills|meds)|prescription without|no prescription)\b/i,
-];
-
-/**
- * MEDICAL ADVICE DETECTION
- * Users should not diagnose or prescribe
- */
-export const medicalAdvicePatterns = [
-  // Diagnosing others
-  /\b(?:you have|you're|you've got|you definitely|you clearly) (?:depression|anxiety|bipolar|PTSD|ADHD|autism|OCD)\b/i,
-  
-  // Prescribing medication
-  /\b(?:you should|you need|take|try|get) (?:this medication|these pills|this drug|this prescription)\b/i,
-  /\b(?:dosage|mg|milligrams) (?:of|for) (?:Xanax|Valium|Prozac|Zoloft|Lexapro|antidepressant)\b/i,
-  
-  // Medical instructions
-  /\b(?:stop taking|change|increase|decrease|cut|split) (?:your|your) (?:meds|medication|pills|prescription)\b/i,
-  
-  // Unqualified medical claims
-  /\b(?:this will cure|guaranteed to fix|definitely works|100% effective|proven to treat)\b.*\b(?:depression|anxiety|mental illness|disorder)\b/i,
-];
-
-/**
- * TRIGGER WARNING DETECTION
- */
-export const triggerKeywords = {
-  depression: /\b(?:severe|major|clinical) depression\b/i,
-  suicide: /\b(?:suicid(?:e|al)|want to die|end my life)\b/i,
-  selfHarm: /\b(?:self[- ]?harm|cutting|SI|urges to hurt)\b/i,
-  eatingDisorder: /\b(?:anorexia|bulimia|restrict|purge|binge)\b/i,
-  substanceUse: /\b(?:alcohol|drug|addict|relapse|sober)\b/i,
-  trauma: /\b(?:trauma|PTSD|flashback|abuse|assault)\b/i,
-  panic: /\b(?:panic attack|can't breathe|heart racing)\b/i,
-  grief: /\b(?:death|grief|lost|died|funeral)\b/i,
+const DISGUISED_HARMFUL_PATTERNS: Record<string, RegExp[]> = {
+  leetspeak: [
+    /su[!1][c¢][!1]d[e3]/gi,  // "su1c1de"
+    /s3lf[\s-]?h[a4]rm/gi,     // "s3lf-h4rm"
+    /k[!1]ll/gi,               // "k1ll"
+  ],
+  spacing: [
+    /s\s*u\s*i\s*c\s*i\s*d\s*e/gi,
+    /s\s*e\s*l\s*f\s*[\s-]*h\s*a\s*r\s*m/gi,
+    /k\s*i\s*l\s*l\s+(?:m\s*y\s*s\s*e\s*l\s*f|y\s*o\s*u\s*r\s*s\s*e\s*l\s*f)/gi,
+  ],
+  symbols: [
+    /k[!1]ll\s+y[o0]urself/gi,
+    /d[!1]e\s+already/gi,
+    /@\s*(?:sui|kys|die)/gi,
+  ],
+  emojis: [
+    /🔫|💊|🔪.*(?:myself|me|tonight)/gi,
+    /💀.*(?:ready|tonight|finally)/gi,
+  ],
+  homoglyphs: [
+    /[sƽ][uμυ][iı!1][cϲ][iı!1][dԁ][eе]/gi,  // Unicode lookalikes
+  ],
 };
 
-/**
- * Check if content contains trigger warning
- */
-export function hasTriggerWarning(content: string): boolean {
-  return /^(?:TW|CW|Trigger Warning|Content Warning):/i.test(content.trim());
-}
+// ============================================================================
+// IMPERSONATION DETECTION - NEW FEATURE #3
+// ============================================================================
 
-/**
- * Analyze content for prohibited keywords
- */
-export function analyzeContent(content: string): {
-  blocked: boolean;
-  flagged: boolean;
-  riskLevel: 'none' | 'low' | 'medium' | 'high' | 'critical';
-  needsTriggerWarning: boolean;
-  suggestedTriggers: string[];
-  reason?: string;
-} {
-  // Strip HTML tags for analysis
-  const tmp = document.createElement('div');
-  tmp.innerHTML = content;
-  const textContent = tmp.textContent || tmp.innerText || '';
-  const lowerContent = textContent.toLowerCase();
+const IMPERSONATION_PATTERNS: Record<string, RegExp[]> = {
+  credentials: [
+    /(?:i'm|i\s+am)\s+(?:a|your)\s+(?:therapist|psychiatrist|psychologist|doctor|counselor|licensed\s+professional)/gi,
+    /as\s+your\s+(?:therapist|doctor|counselor)/gi,
+    /i\s+have\s+a\s+(?:phd|doctorate|medical\s+degree)\s+in/gi,
+  ],
+  authority: [
+    /as\s+(?:a|your)\s+mental\s+health\s+professional/gi,
+    /in\s+my\s+professional\s+(?:opinion|experience)/gi,
+    /i'm\s+(?:board\s+)?certified\s+in/gi,
+  ],
+  diagnosis: [
+    /you\s+(?:definitely\s+)?have\s+(?:depression|anxiety|ptsd|bipolar|schizophrenia|bpd)/gi,
+    /you\s+(?:are|seem)\s+(?:clearly\s+)?(?:depressed|manic|psychotic)/gi,
+    /i\s+diagnose\s+you\s+with/gi,
+    /you're\s+suffering\s+from\s+(?:clinical|major)/gi,
+  ],
+  prescription: [
+    /you\s+(?:should|need\s+to)\s+(?:take|get\s+on|try)\s+(?:medication|meds|antidepressants|ssri|benzos)/gi,
+    /stop\s+taking\s+your\s+(?:medication|meds|pills)/gi,
+    /i\s+recommend\s+(?:zoloft|prozac|xanax|lexapro|wellbutrin)/gi,
+  ],
+};
 
-  // Compound logic: explicit suicide intent + method-seeking or "quick/painless"
-  const explicitSuicideIntent = /\b(?:kill myself|end my life|commit suicide|die)\b/i;
-  const methodSeeking = /\b(?:how (?:to|do i)|tips|advice|suggest(?:ion|ions)?|best way)\b/i;
-  const quickOrPainless = /\b(?:quick|fast|painless|without pain|easy)\b/i;
-  if (explicitSuicideIntent.test(lowerContent) && (methodSeeking.test(lowerContent) || quickOrPainless.test(lowerContent))) {
-    return {
-      blocked: true,
-      flagged: true,
-      riskLevel: 'critical',
-      needsTriggerWarning: true,
-      suggestedTriggers: ['Crisis'],
-      reason: 'Method-seeking or quick/painless suicide request'
-    };
-  }
+// ============================================================================
+// TOXIC POSITIVITY - EXPANDED FEATURE #4
+// ============================================================================
 
-  // Check for critical keywords (BLOCK)
-  for (const pattern of [...criticalSuicideKeywords, ...criticalSelfHarmKeywords]) {
-    if (pattern.test(lowerContent)) {
-      return {
-        blocked: true,
-        flagged: true,
-        riskLevel: 'critical',
-        needsTriggerWarning: true,
-        suggestedTriggers: ['Crisis'],
-        reason: 'Content contains prohibited suicide or self-harm methods'
-      };
-    }
-  }
+const TOXIC_POSITIVITY_PATTERNS: Record<string, RegExp[]> = {
+  dismissive: [
+    /just\s+(?:think\s+positive|be\s+happy|smile\s+more|get\s+over\s+it|cheer\s+up)/gi,
+    /stop\s+(?:being\s+)?(?:negative|sad|depressed)/gi,
+    /it'?s\s+all\s+in\s+your\s+head/gi,
+    /you'?re\s+(?:just|only)\s+(?:sad|upset|stressed)/gi,
+  ],
+  minimizing: [
+    /(?:others|people)\s+have\s+it\s+(?:much\s+)?worse/gi,
+    /you'?re\s+(?:being\s+)?(?:dramatic|overdramatic|too\s+sensitive)/gi,
+    /at\s+least\s+you'?re\s+not/gi,
+    /could\s+be\s+worse/gi,
+    /first\s+world\s+problems/gi,
+  ],
+  spiritualBypass: [
+    /everything\s+happens\s+for\s+a\s+reason/gi,
+    /(?:it'?s|this\s+is)\s+god'?s\s+(?:plan|will)/gi,
+    /you\s+(?:just\s+)?need\s+(?:more\s+)?(?:faith|prayer|jesus)/gi,
+    /the\s+universe\s+(?:has\s+a\s+plan|is\s+testing\s+you)/gi,
+  ],
+  hustleCulture: [
+    /no\s+excuses/gi,
+    /(?:grind|hustle)\s+harder/gi,
+    /mind\s+over\s+matter/gi,
+    /weak\s+(?:people|minded)/gi,
+    /suck\s+it\s+up/gi,
+    /everyone\s+struggles/gi,
+  ],
+  falseEquivalence: [
+    /i\s+(?:was|felt)\s+(?:sad|depressed)\s+(?:once|too)\s+(?:and|but)/gi,
+    /depression\s+is\s+(?:just|only)\s+a\s+(?:mood|feeling|choice)/gi,
+  ],
+};
 
-  // Check for harassment/bullying (BLOCK or FLAG)
-  for (const pattern of harassmentPatterns) {
-    if (pattern.test(lowerContent)) {
-      // Some harassment is critical enough to block immediately
-      const criticalHarassment = /\b(?:kill yourself|fuck off|shut up|go away)\b/i;
-      if (criticalHarassment.test(lowerContent)) {
-        return {
-          blocked: true,
-          flagged: true,
-          riskLevel: 'critical',
-          needsTriggerWarning: false,
-          suggestedTriggers: [],
-          reason: 'Content contains harassment or bullying'
-        };
-      }
-      // Other harassment should be flagged for review
-      return {
-        blocked: false,
-        flagged: true,
-        riskLevel: 'high',
-        needsTriggerWarning: false,
-        suggestedTriggers: [],
-        reason: 'Content may contain harassment or harmful language'
-      };
-    }
-  }
+// ============================================================================
+// HIGH-RISK PATTERNS - FLAG FOR REVIEW
+// ============================================================================
 
-  // Check for spam/scams (FLAG)
-  for (const pattern of spamPatterns) {
-    if (pattern.test(lowerContent)) {
-      return {
-        blocked: false,
-        flagged: true,
-        riskLevel: 'medium',
-        needsTriggerWarning: false,
-        suggestedTriggers: [],
-        reason: 'Content may be spam or promotional'
-      };
-    }
-  }
+const HIGH_RISK_KEYWORDS = [
+  /suicidal\s+(?:thoughts|ideation|feelings)/gi,
+  /want\s+to\s+(?:die|disappear|not\s+exist)/gi,
+  /wish\s+i\s+(?:was|were)\s+(?:dead|never\s+born)/gi,
+  /don'?t\s+want\s+to\s+(?:live|be\s+here|exist)/gi,
+  /tired\s+of\s+(?:living|life|being\s+alive)/gi,
+  /can'?t\s+(?:take|do)\s+(?:it|this)\s+anymore/gi,
+  /ready\s+to\s+(?:give\s+up|end\s+(?:it|things))/gi,
+];
 
-  // Check for medical advice (FLAG)
-  for (const pattern of medicalAdvicePatterns) {
-    if (pattern.test(lowerContent)) {
-      return {
-        blocked: false,
-        flagged: true,
-        riskLevel: 'medium',
-        needsTriggerWarning: false,
-        suggestedTriggers: [],
-        reason: 'Content may contain unqualified medical advice'
-      };
-    }
-  }
+const SPAM_PATTERNS = [
+  // Multiple URLs
+  /https?:\/\/[^\s]+.*https?:\/\/[^\s]+/gi,
+  
+  // MLM/Scam language
+  /(?:dm|message)\s+me\s+(?:for|to\s+learn)/gi,
+  /(?:make|earn)\s+\$\d+.*(?:from\s+home|working\s+from)/gi,
+  /passive\s+income/gi,
+  /financial\s+freedom/gi,
+  
+  // Fake therapy
+  /i\s+can\s+(?:cure|fix|heal)\s+(?:your|you)/gi,
+  /guaranteed\s+(?:results|cure|recovery)/gi,
+  /miracle\s+(?:cure|treatment|remedy)/gi,
+];
 
-  // Check for high-risk keywords (FLAG for review)
-  let riskLevel: 'none' | 'low' | 'medium' | 'high' = 'none';
-  const suggestedTriggers: string[] = [];
+const MEDICAL_ADVICE_PATTERNS = [
+  /you\s+should\s+(?:stop|start|increase|decrease|change)\s+(?:taking|your)\s+(?:medication|meds)/gi,
+  /try\s+(?:this|these)\s+(?:supplements|vitamins|herbs)/gi,
+  /instead\s+of\s+(?:therapy|medication|meds)/gi,
+];
 
-  for (const pattern of highRiskKeywords) {
-    if (pattern.test(lowerContent)) {
-      riskLevel = 'high';
-      break;
-    }
-  }
+// ============================================================================
+// COORDINATED HARM DETECTION - NEW FEATURE #5
+// ============================================================================
 
-  // Check for trigger warnings needed
-  for (const [topic, pattern] of Object.entries(triggerKeywords)) {
-    if (pattern.test(lowerContent)) {
-      const displayTopic = topic
-        .replace(/([A-Z])/g, ' $1')
-        .trim()
-        .replace(/^./, char => char.toUpperCase());
-      suggestedTriggers.push(displayTopic);
-    }
-  }
+const COORDINATED_HARM_PATTERNS: Record<string, RegExp[]> = {
+  methodSharing: [
+    /(?:here'?s|try\s+this)\s+(?:method|way)/gi,
+    /worked\s+for\s+me.*(?:pills|cutting|hanging)/gi,
+  ],
+  encouragement: [
+    /(?:do|go\s+for)\s+it.*you'?ll\s+(?:feel\s+better|be\s+free)/gi,
+    /i'?ll\s+(?:do\s+it\s+)?(?:with|too|if\s+you\s+do)/gi,
+    /(?:we|let'?s)\s+(?:do\s+it\s+)?together/gi,
+  ],
+  pacts: [
+    /suicide\s+pact/gi,
+    /both\s+(?:end\s+it|die\s+together)/gi,
+    /meet\s+up\s+(?:and|to)/gi,
+  ],
+};
 
-  // Determine if blocked (critical only) or flagged
-  return {
-    blocked: false,
-    flagged: riskLevel === 'high',
-    riskLevel,
-    needsTriggerWarning: suggestedTriggers.length > 0 && !hasTriggerWarning(content),
-    suggestedTriggers
-  };
-}
+// ============================================================================
+// POSITIVE INDICATORS - NEW FEATURE #8
+// ============================================================================
 
-/**
- * Get crisis resources message
- */
-export function getCrisisResources(): string {
-  return `🆘 CRISIS RESOURCES - IMMEDIATE HELP AVAILABLE
+const POSITIVE_INDICATORS: Record<string, RegExp[]> = {
+  progressSharing: [
+    /\d+\s+days?\s+(?:clean|sober|self[-\s]harm[-\s]free)/gi,
+    /made\s+it\s+through/gi,
+    /feeling\s+(?:a\s+(?:little|bit)\s+)?better/gi,
+    /small\s+(?:win|victory|progress)/gi,
+    /proud\s+of\s+myself/gi,
+  ],
+  helpSeeking: [
+    /(?:started|seeing|going\s+to)\s+(?:therapy|a\s+therapist|counseling|a\s+counselor)/gi,
+    /talked\s+to\s+(?:someone|a\s+professional|my\s+doctor)/gi,
+    /reached\s+out\s+for\s+help/gi,
+    /scheduled\s+(?:an\s+)?appointment/gi,
+  ],
+  peerSupport: [
+    /thank\s+you\s+(?:all|everyone|so\s+much)/gi,
+    /you\s+(?:really\s+)?helped\s+me/gi,
+    /appreciate\s+(?:you|this\s+community)/gi,
+    /not\s+alone/gi,
+  ],
+  coping: [
+    /(?:tried|using|practiced)\s+(?:breathing|meditation|grounding)/gi,
+    /(?:called|texted)\s+(?:hotline|crisis\s+line|988)/gi,
+    /distracted\s+myself\s+with/gi,
+  ],
+};
 
-If you or someone you know is in crisis:
+// ============================================================================
+// TRIGGER WARNING TOPICS
+// ============================================================================
 
-📞 Call 988 (Suicide & Crisis Lifeline)
-   Available 24/7 - Call or text 988
+const TRIGGER_WARNING_TOPICS: Record<string, RegExp[]> = {
+  'Suicide': [
+    /suicid/gi,
+    /want\s+to\s+die/gi,
+    /kill\s+myself/gi,
+  ],
+  'Self-Harm': [
+    /self[-\s]?harm/gi,
+    /cutting/gi,
+    /hurt\s+myself/gi,
+  ],
+  'Sexual Abuse': [
+    /(?:sexual|sex)\s+abuse/gi,
+    /(?:raped|rape)/gi,
+    /molest/gi,
+    /sexual\s+assault/gi,
+  ],
+  'Physical Abuse': [
+    /(?:physical|domestic)\s+(?:abuse|violence)/gi,
+    /beaten/gi,
+    /hit\s+me/gi,
+  ],
+  'Eating Disorders': [
+    /anorexia/gi,
+    /bulimia/gi,
+    /eating\s+disorder/gi,
+    /purging/gi,
+  ],
+  'Substance Abuse': [
+    /addiction/gi,
+    /alcoholic/gi,
+    /drug\s+abuse/gi,
+    /relapse/gi,
+  ],
+  'Trauma/PTSD': [
+    /ptsd/gi,
+    /trauma/gi,
+    /flashback/gi,
+    /triggered/gi,
+  ],
+  'Depression': [
+    /depression/gi,
+    /depressed/gi,
+  ],
+  'Anxiety': [
+    /anxiety\s+attack/gi,
+    /panic\s+attack/gi,
+  ],
+};
+
+// ============================================================================
+// CRISIS RESOURCES
+// ============================================================================
+
+export const CRISIS_RESOURCES = `
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+🆘 CRISIS RESOURCES
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+If you're in crisis, please reach out:
+
+📞 988 Suicide & Crisis Lifeline
+   Call or Text: 988
+   Available 24/7
 
 💬 Crisis Text Line
    Text HOME to 741741
+   Available 24/7
 
-🌐 International Crisis Resources
-   Visit: https://www.iasp.info/resources/Crisis_Centres/
+🌐 Online Chat
+   suicidepreventionlifeline.org/chat
+   Available 24/7
 
-🏥 Emergency Services
-   Call 911 or go to your nearest emergency room
+🏳️‍🌈 Trevor Project (LGBTQ+ Youth)
+   Call: 1-866-488-7386
+   Text START to 678678
 
-🤖 Chat with Amani
-   Your personal AI support (in app)
+You are not alone. Help is available.
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+`;
 
-🔍 Find a Therapist
-   Use our Resources section
+// ============================================================================
+// LEGACY EXPORTS FOR BACKWARD COMPATIBILITY
+// ============================================================================
 
-You are not alone. Help is available 24/7.`;
-}
+// Export patterns for external use if needed
+export const criticalSuicideKeywords = CRITICAL_SUICIDE_KEYWORDS;
+export const criticalSelfHarmKeywords = CRITICAL_SELF_HARM_KEYWORDS;
+export const highRiskKeywords = HIGH_RISK_KEYWORDS;
+export const harassmentPatterns = HARASSMENT_PATTERNS;
+export const spamPatterns = SPAM_PATTERNS;
+export const medicalAdvicePatterns = MEDICAL_ADVICE_PATTERNS;
+export const triggerKeywords = TRIGGER_WARNING_TOPICS;
 
 /**
- * Format content warning for display
+ * Get crisis resources message (legacy function name)
  */
-export function formatTriggerWarning(topics: string[]): string {
-  return `⚠️ TW: ${topics.join(', ')}`;
+export function getCrisisResources(): string {
+  return CRISIS_RESOURCES;
 }
 
 /**
- * Generate block message for prohibited content
+ * Generate block message for prohibited content (legacy function)
  */
 export function getBlockedMessage(reason: string): string {
   return `We're concerned about the content in your post. If you're in crisis, please reach out for help immediately.
 
-${getCrisisResources()}
+${CRISIS_RESOURCES}
 
 Our community guidelines prohibit detailed descriptions of suicide methods or self-harm. You can share that you're struggling without specific details.
 
@@ -381,8 +368,313 @@ Would you like to:
 }
 
 /**
- * Create a simple content hash for duplicate detection
+ * Format trigger warning for display (legacy function)
  */
+export function formatTriggerWarning(topics: string[]): string {
+  return `⚠️ TW: ${topics.join(', ')}`;
+}
+
+/**
+ * Check if content contains trigger warning (legacy function)
+ */
+export function hasTriggerWarning(content: string): boolean {
+  return /^(?:TW|CW|Trigger Warning|Content Warning):/i.test(content.trim());
+}
+
+// ============================================================================
+// MAIN ANALYSIS FUNCTION
+// ============================================================================
+
+export function analyzeContent(content: string): ModerationResult & {
+  // Legacy properties for backward compatibility
+  blocked: boolean;
+  flagged: boolean;
+  riskLevel: 'none' | 'low' | 'medium' | 'high' | 'critical';
+  needsTriggerWarning: boolean;
+  suggestedTriggers: string[];
+  reason?: string;
+} {
+  const result: ModerationResult = {
+    shouldBlock: false,
+    shouldFlag: false,
+    severity: 'none',
+    reasons: [],
+    triggerWarnings: [],
+    crisisResourcesNeeded: false,
+    detectedPatterns: [],
+  };
+
+  // Strip HTML tags for analysis
+  const tmp = document.createElement('div');
+  tmp.innerHTML = content;
+  const textContent = tmp.textContent || tmp.innerText || '';
+
+  // ============================================================================
+  // CRITICAL - AUTO BLOCK
+  // ============================================================================
+
+  // Check critical suicide keywords
+  for (const pattern of CRITICAL_SUICIDE_KEYWORDS) {
+    pattern.lastIndex = 0; // Reset regex state
+    if (pattern.test(textContent)) {
+      result.shouldBlock = true;
+      result.severity = 'critical';
+      result.reasons.push('Contains explicit suicide method or immediate intent');
+      result.crisisResourcesNeeded = true;
+      result.detectedPatterns.push('critical_suicide');
+      return createLegacyResult(result);
+    }
+  }
+
+  // Check critical self-harm keywords
+  for (const pattern of CRITICAL_SELF_HARM_KEYWORDS) {
+    pattern.lastIndex = 0;
+    if (pattern.test(textContent)) {
+      result.shouldBlock = true;
+      result.severity = 'critical';
+      result.reasons.push('Contains explicit self-harm methods');
+      result.crisisResourcesNeeded = true;
+      result.detectedPatterns.push('critical_self_harm');
+      return createLegacyResult(result);
+    }
+  }
+
+  // Check harassment patterns
+  for (const pattern of HARASSMENT_PATTERNS) {
+    pattern.lastIndex = 0;
+    if (pattern.test(textContent)) {
+      result.shouldBlock = true;
+      result.severity = 'critical';
+      result.reasons.push('Contains harassment or bullying');
+      result.detectedPatterns.push('harassment');
+      return createLegacyResult(result);
+    }
+  }
+
+  // ============================================================================
+  // DISGUISED PATTERNS - NEW FEATURE #1
+  // ============================================================================
+
+  for (const [category, patterns] of Object.entries(DISGUISED_HARMFUL_PATTERNS)) {
+    for (const pattern of patterns) {
+      pattern.lastIndex = 0;
+      if (pattern.test(textContent)) {
+        result.shouldBlock = true;
+        result.severity = 'critical';
+        result.reasons.push(`Contains disguised harmful content (${category})`);
+        result.crisisResourcesNeeded = true;
+        result.detectedPatterns.push(`disguised_${category}`);
+        return createLegacyResult(result);
+      }
+    }
+  }
+
+  // ============================================================================
+  // IMPERSONATION - NEW FEATURE #3
+  // ============================================================================
+
+  for (const [category, patterns] of Object.entries(IMPERSONATION_PATTERNS)) {
+    for (const pattern of patterns) {
+      pattern.lastIndex = 0;
+      if (pattern.test(textContent)) {
+        result.shouldFlag = true;
+        result.severity = result.severity === 'none' ? 'high' : result.severity;
+        result.reasons.push(`Possible impersonation: ${category}`);
+        result.detectedPatterns.push(`impersonation_${category}`);
+      }
+    }
+  }
+
+  // ============================================================================
+  // TOXIC POSITIVITY - EXPANDED FEATURE #4
+  // ============================================================================
+
+  let toxicPositivityCount = 0;
+  for (const [category, patterns] of Object.entries(TOXIC_POSITIVITY_PATTERNS)) {
+    for (const pattern of patterns) {
+      pattern.lastIndex = 0;
+      if (pattern.test(textContent)) {
+        toxicPositivityCount++;
+        result.detectedPatterns.push(`toxic_positivity_${category}`);
+      }
+    }
+  }
+
+  if (toxicPositivityCount >= 2) {
+    result.shouldFlag = true;
+    result.severity = result.severity === 'none' ? 'medium' : result.severity;
+    result.reasons.push('Contains toxic positivity language');
+  }
+
+  // ============================================================================
+  // COORDINATED HARM - NEW FEATURE #5
+  // ============================================================================
+
+  for (const [category, patterns] of Object.entries(COORDINATED_HARM_PATTERNS)) {
+    for (const pattern of patterns) {
+      pattern.lastIndex = 0;
+      if (pattern.test(textContent)) {
+        result.shouldFlag = true;
+        result.severity = 'high';
+        result.reasons.push(`Possible coordinated harm: ${category}`);
+        result.detectedPatterns.push(`coordinated_${category}`);
+      }
+    }
+  }
+
+  // ============================================================================
+  // HIGH-RISK CONTENT - FLAG
+  // ============================================================================
+
+  for (const pattern of HIGH_RISK_KEYWORDS) {
+    pattern.lastIndex = 0;
+    if (pattern.test(textContent)) {
+      result.shouldFlag = true;
+      result.severity = result.severity === 'none' ? 'high' : result.severity;
+      result.reasons.push('Contains high-risk suicide ideation language');
+      result.crisisResourcesNeeded = true;
+      result.detectedPatterns.push('high_risk_ideation');
+      break;
+    }
+  }
+
+  // ============================================================================
+  // SPAM PATTERNS
+  // ============================================================================
+
+  for (const pattern of SPAM_PATTERNS) {
+    pattern.lastIndex = 0;
+    if (pattern.test(textContent)) {
+      result.shouldFlag = true;
+      result.severity = result.severity === 'none' ? 'medium' : result.severity;
+      result.reasons.push('Possible spam or scam content');
+      result.detectedPatterns.push('spam');
+      break;
+    }
+  }
+
+  // ============================================================================
+  // MEDICAL ADVICE
+  // ============================================================================
+
+  for (const pattern of MEDICAL_ADVICE_PATTERNS) {
+    pattern.lastIndex = 0;
+    if (pattern.test(textContent)) {
+      result.shouldFlag = true;
+      result.severity = result.severity === 'none' ? 'medium' : result.severity;
+      result.reasons.push('Contains medical advice');
+      result.detectedPatterns.push('medical_advice');
+      break;
+    }
+  }
+
+  // ============================================================================
+  // POSITIVE INDICATORS - NEW FEATURE #8
+  // ============================================================================
+
+  let positiveScore = 0;
+  for (const [category, patterns] of Object.entries(POSITIVE_INDICATORS)) {
+    for (const pattern of patterns) {
+      pattern.lastIndex = 0;
+      if (pattern.test(textContent)) {
+        positiveScore++;
+        result.detectedPatterns.push(`positive_${category}`);
+      }
+    }
+  }
+
+  // Reduce severity if strong positive indicators
+  if (positiveScore >= 2 && result.severity === 'high') {
+    result.severity = 'medium';
+  }
+
+  // ============================================================================
+  // TRIGGER WARNINGS
+  // ============================================================================
+
+  for (const [topic, patterns] of Object.entries(TRIGGER_WARNING_TOPICS)) {
+    for (const pattern of patterns) {
+      pattern.lastIndex = 0;
+      if (pattern.test(textContent)) {
+        if (!result.triggerWarnings.includes(topic)) {
+          result.triggerWarnings.push(topic);
+        }
+      }
+    }
+  }
+
+  return createLegacyResult(result);
+}
+
+/**
+ * Helper to create legacy-compatible result
+ */
+function createLegacyResult(result: ModerationResult): ModerationResult & {
+  blocked: boolean;
+  flagged: boolean;
+  riskLevel: 'none' | 'low' | 'medium' | 'high' | 'critical';
+  needsTriggerWarning: boolean;
+  suggestedTriggers: string[];
+  reason?: string;
+} {
+  return {
+    ...result,
+    // Legacy properties
+    blocked: result.shouldBlock,
+    flagged: result.shouldFlag,
+    riskLevel: result.severity,
+    needsTriggerWarning: result.triggerWarnings.length > 0,
+    suggestedTriggers: result.triggerWarnings,
+    reason: result.reasons.length > 0 ? result.reasons[0] : undefined,
+  };
+}
+
+// ============================================================================
+// DUPLICATE CONTENT DETECTION
+// ============================================================================
+
+const recentContentHashes = new Map<string, number>();
+
+export function checkDuplicateContent(content: string, userId: string): boolean {
+  const contentHash = `${userId}:${content.trim().toLowerCase().slice(0, 100)}`;
+  const lastSeen = recentContentHashes.get(contentHash);
+  const now = Date.now();
+
+  if (lastSeen && now - lastSeen < 60000) { // 1 minute
+    return true; // Duplicate
+  }
+
+  recentContentHashes.set(contentHash, now);
+
+  // Cleanup old entries (older than 5 minutes)
+  for (const [hash, timestamp] of recentContentHashes.entries()) {
+    if (now - timestamp > 300000) {
+      recentContentHashes.delete(hash);
+    }
+  }
+
+  return false;
+}
+
+// ============================================================================
+// APPLY TRIGGER WARNINGS TO CONTENT
+// ============================================================================
+
+export function applyTriggerWarnings(content: string, warnings: string[]): string {
+  if (warnings.length === 0) return content;
+
+  const warningText = `⚠️ TW: ${warnings.join(', ')}
+
+---
+
+`;
+  return warningText + content;
+}
+
+// ============================================================================
+// LEGACY: Create content hash for duplicate detection (from old file)
+// ============================================================================
+
 export function createContentHash(content: string): string {
   // Normalize content: lowercase, remove punctuation, trim whitespace
   const normalized = content
@@ -401,5 +693,3 @@ export function createContentHash(content: string): string {
   }
   return Math.abs(hash).toString();
 }
-
-

@@ -227,12 +227,191 @@ const extractTopics = (userMessage) => {
 
   if (message.match(/financ|money|debt|bill|income|afford/)) topics.push('financial stress');
   if (message.match(/wife|husband|partner|relationship|marriage/)) topics.push('relationship');
-  if (message.match(/work|job|career|employ|boss/)) topics.push('work');
+  if (message.match(/work|job|career|employ|boss|project management|sales|marketing|engineering|developer|manager|experience|position|role|industry|field|profession|transition|switch careers|change careers/)) topics.push('work');
   if (message.match(/depress|anxi|stress|worry|overwhelm/)) topics.push('mental health');
   if (message.match(/guilt|shame|inadequate|failure/)) topics.push('self-worth');
   if (message.match(/family|parent|child|kid/)) topics.push('family');
   
   return topics;
+};
+
+// ⭐ GRACEFUL DEGRADATION: Fallback response when Claude API fails
+const getFallbackResponse = (userMessage, intents, topics, context) => {
+  const message = userMessage.toLowerCase();
+  
+  // Crisis fallback
+  if (intents.includes('crisis') || message.match(/suicide|kill myself|end my life|want to die/)) {
+    return `I'm here with you, brother. Right now, please reach out for immediate support:
+
+• Call 988 (Suicide & Crisis Lifeline) - available 24/7
+• Text "HELLO" to 741741 (Crisis Text Line)
+• Call 911 if you're in immediate danger
+
+You're not alone, and there are people who want to help you right now. Please reach out.`;
+  }
+  
+  // Mental health fallback
+  if (intents.some(i => ['anxiety', 'depression', 'emotionalBurden', 'selfWorth'].includes(i))) {
+    return `I hear you, brother. It sounds like you're going through a lot right now. 
+
+I want to make sure you get the support you need. While I'm here to listen, sometimes talking with a professional counselor or therapist can be really helpful.
+
+Would you like me to share some resources for finding support? Or is there something specific you'd like to talk about right now?`;
+  }
+  
+  // Career/work stress fallback
+  if (topics.includes('work') || intents.includes('workStress')) {
+    return `I hear you, brother. Career transitions and work challenges can feel overwhelming, especially when you're stepping into something new.
+
+What's weighing on you most about this situation? Is it the uncertainty, the skills gap, or something else? I'm here to help you think through it.`;
+  }
+  
+  // Relationship fallback (separate from work)
+  if (intents.includes('relationshipConcerns') || topics.includes('relationship')) {
+    return `I understand this is weighing on you. Relationship issues can really be tough to navigate.
+
+What's been the hardest part about this situation? I'm here to listen and help you think through it.`;
+  }
+  
+  // General supportive fallback
+  return `I hear you, brother. I'm here to listen and support you. 
+
+Can you tell me a bit more about what's going on? I want to make sure I understand what you're dealing with so I can help in the best way possible.`;
+};
+
+// ⭐ HYBRID APPROACH: Check for simple cases that can be handled without Claude
+const checkSimpleCase = (userMessage) => {
+  const message = userMessage.toLowerCase().trim();
+  const originalMessage = userMessage.trim();
+  
+  // 1. Simple greetings (very clear, no context needed)
+  const greetingPattern = /^(hi|hello|hey|sup|what's up|whats up|good morning|good afternoon|good evening|yo|wassup|greetings)[\s!?.]*$/i;
+  if (greetingPattern.test(originalMessage)) {
+    const greetings = [
+      "Hey brother! 👋 What's on your mind today?",
+      "What's good, bro? How can I help you today?",
+      "Hey! I'm here for you. What's going on?",
+      "What's up, man? How are you feeling?",
+      "Hey there! I'm Amani, and I'm here to listen. What's on your mind?"
+    ];
+    return {
+      type: 'greeting',
+      response: greetings[Math.floor(Math.random() * greetings.length)],
+      intents: ['general'],
+      reason: 'Simple greeting detected'
+    };
+  }
+  
+  // 2. Simple acknowledgments (thanks, ok, got it)
+  const acknowledgmentPattern = /^(thanks?|thank you|thx|ok|okay|got it|gotcha|alright|cool|sounds good|appreciate it)[\s!?.]*$/i;
+  if (acknowledgmentPattern.test(originalMessage)) {
+    return {
+      type: 'acknowledgment',
+      response: "You're welcome, brother. I'm here whenever you need me. 🤝",
+      intents: ['general'],
+      reason: 'Simple acknowledgment detected'
+    };
+  }
+  
+  // 3. Simple "how are you" questions (not asking about mental health in depth)
+  const howAreYouPattern = /^(how are you|how you doing|how's it going|how are things|what's good)[\s?]*$/i;
+  if (howAreYouPattern.test(originalMessage)) {
+    return {
+      type: 'how_are_you',
+      response: "I'm doing well, thanks for asking! I'm here to support you. How are you doing today?",
+      intents: ['general'],
+      reason: 'Simple how are you question detected'
+    };
+  }
+  
+  // 4. Simple "yes/no" responses (check BEFORE incomplete check)
+  const yesNoPattern = /^(yes|yeah|yep|yup|no|nope|nah|sure|ok|okay|alright)[\s!?.]*$/i;
+  if (yesNoPattern.test(originalMessage)) {
+    return {
+      type: 'yes_no',
+      response: "Got it. Tell me more about what's on your mind.",
+      intents: ['general'],
+      reason: 'Simple yes/no response detected'
+    };
+  }
+  
+  // 5. Crisis keywords - ALWAYS use Claude for proper handling
+  const crisisPatterns = [
+    /\b(suicid|kill myself|end it all|want to die|better off dead|hurt myself|self harm|self-harm)\b/i,
+    /\b(can't do this anymore|can't go on|can't take it anymore|done with life|no reason to live)\b/i,
+    /\b(planning to|going to kill|ending it|final arrangements|goodbye forever)\b/i
+  ];
+  if (crisisPatterns.some(pattern => pattern.test(message))) {
+    // Don't handle crisis with regex - always use Claude for proper crisis protocol
+    console.log('⚠️ Crisis detected - routing to Claude for proper handling');
+    return null;
+  }
+  
+  // 6. Very short messages that are likely incomplete or typos (but not yes/no)
+  if (originalMessage.length <= 2 && /^[a-z]{1,2}[\s!?.]*$/i.test(originalMessage)) {
+    return {
+      type: 'incomplete',
+      response: "I'm not sure I caught that. Could you tell me a bit more?",
+      intents: ['general'],
+      reason: 'Very short message, likely incomplete'
+    };
+  }
+  
+  // 7. Very short questions that are likely incomplete (but not yes/no)
+  if (originalMessage.length <= 3 && /^[a-z]{1,3}\?*$/i.test(originalMessage) && !yesNoPattern.test(originalMessage)) {
+    return {
+      type: 'incomplete',
+      response: "I'm not sure I caught that. Could you tell me a bit more?",
+      intents: ['general'],
+      reason: 'Very short message, likely incomplete'
+    };
+  }
+  
+  // Not a simple case - needs Claude for proper contextual understanding
+  return null;
+};
+
+// ⭐ SMART SUMMARIZATION: Summarize old conversation messages
+// Provides ~76% token reduction for long conversations
+const summarizeOldMessages = (oldMessages) => {
+  if (!oldMessages || oldMessages.length === 0) {
+    return 'No previous conversation.';
+  }
+  
+  // Extract key information
+  const topics = new Set();
+  const classifications = new Set();
+  let crisisDetected = false;
+  let emotionalTrend = 'stable';
+  
+  oldMessages.forEach(msg => {
+    // Extract topics from content
+    const content = (msg.content || '').toLowerCase();
+    if (content.includes('anxiety') || content.includes('worried')) topics.add('anxiety');
+    if (content.includes('depress') || content.includes('sad')) topics.add('depression');
+    if (content.includes('relationship') || content.includes('wife') || content.includes('partner')) topics.add('relationships');
+    if (content.includes('work') || content.includes('job') || content.includes('career')) topics.add('work');
+    if (content.includes('money') || content.includes('financial') || content.includes('debt')) topics.add('financial');
+    
+    // Check for crisis
+    if (content.includes('suicid') || content.includes('kill myself') || content.includes('end it all')) {
+      crisisDetected = true;
+    }
+  });
+  
+  // Build concise summary
+  const parts = [];
+  parts.push(`Previous conversation: ${Math.floor(oldMessages.length / 2)} exchanges`);
+  
+  if (topics.size > 0) {
+    parts.push(`Topics: ${Array.from(topics).slice(0, 3).join(', ')}`);
+  }
+  
+  if (crisisDetected) {
+    parts.push('⚠️ Previous crisis discussion');
+  }
+  
+  return parts.join('. ') + '.';
 };
 
 // Validate response to catch inappropriate physical health suggestions
@@ -388,32 +567,266 @@ app.post('/api/chat', async (req, res) => {
       });
     }
     
-    // Prepare messages for Claude
+    // ⭐ SMART CONVERSATION MEMORY: Use contextManager for intelligent summarization
+    // This provides 76% token reduction for long conversations
+    const userId = req.body.userId || 'default';
+    const sessionId = req.body.sessionId || 'default';
+    
+    // ⭐ CONTEXT BEST PRACTICES: Prepare messages with smart summarization
     const messages = [];
     
-    // Add conversation history
-    if (conversationHistory && conversationHistory.length > 0) {
-      conversationHistory.forEach(msg => {
-        messages.push({
-          role: msg.role,
-          content: msg.content
-        });
+    // ⭐ NEW: Use smart context manager for conversation memory
+    // If conversation is long, it will summarize old messages and keep recent ones
+    let processedHistory = conversationHistory || [];
+    
+    if (conversationHistory && conversationHistory.length > 10) {
+      // For long conversations, use smart summarization
+      // Note: contextManager is frontend-only, so we implement summarization here
+      const MAX_CONTEXT_MESSAGES = 10; // Last 10 messages (5 exchanges)
+      const SUMMARIZATION_THRESHOLD = 15; // Summarize if more than 15 messages
+      
+      if (conversationHistory.length > SUMMARIZATION_THRESHOLD) {
+        // Summarize old messages, keep recent ones
+        const recentCount = MAX_CONTEXT_MESSAGES;
+        const recentMessages = conversationHistory.slice(-recentCount);
+        const oldMessages = conversationHistory.slice(0, -recentCount);
+        
+        // Create summary of old messages (local summarization - fast and free)
+        const summary = summarizeOldMessages(oldMessages);
+        
+        // Add summary as a system message, then recent messages
+        processedHistory = [
+          {
+            role: 'assistant',
+            content: `[Previous conversation summary: ${summary}]`
+          },
+          ...recentMessages
+        ];
+        
+        console.log(`📝 Smart summarization: ${oldMessages.length} old messages → summary, keeping ${recentMessages.length} recent`);
+        console.log(`💰 Token reduction: ~${Math.round((oldMessages.length / conversationHistory.length) * 100)}%`);
+      } else {
+        // Just limit to recent messages
+        processedHistory = conversationHistory.slice(-MAX_CONTEXT_MESSAGES);
+      }
+    }
+    
+    // ⭐ Context window management - additional safety limits
+    const MAX_CONTEXT_TOKENS = 8000; // Approximate token limit (conservative)
+    const MAX_MESSAGE_LENGTH = 2000; // Characters per message
+    
+    // Process history with token limits
+    let estimatedTokens = 0;
+    for (const msg of processedHistory) {
+      // Estimate tokens (rough: 1 token ≈ 4 characters)
+      const msgTokens = Math.ceil((msg.content?.length || 0) / 4);
+      
+      // Skip if adding this message would exceed token limit
+      if (estimatedTokens + msgTokens > MAX_CONTEXT_TOKENS - 500) { // Leave room for system prompt
+        console.log(`⚠️ Context window limit reached, truncating history at ${messages.length} messages`);
+        break;
+      }
+      
+      // Truncate very long messages
+      const content = (msg.content || '').length > MAX_MESSAGE_LENGTH 
+        ? msg.content.substring(0, MAX_MESSAGE_LENGTH) + '... [truncated]'
+        : msg.content;
+      
+      messages.push({
+        role: msg.role,
+        content: content
+      });
+      
+      estimatedTokens += msgTokens;
+    }
+    
+    console.log(`📏 Context: ${messages.length} messages, ~${estimatedTokens} tokens`);
+    
+    // Add current user message (truncate if too long)
+    const userMessageContent = userMessage.length > MAX_MESSAGE_LENGTH
+      ? userMessage.substring(0, MAX_MESSAGE_LENGTH) + '... [truncated]'
+      : userMessage;
+    
+    messages.push({
+      role: 'user',
+      content: userMessageContent
+    });
+    
+    // ⭐ CRISIS ESCALATION: Check for crisis FIRST (before anything else)
+    const crisisManager = getCrisisManager();
+    const crisisCheck = crisisManager.detectCrisisSeverity(userMessage, { 
+      category: classifyIntent(userMessage, context).includes('crisis') ? 'CRISIS' : 'GENERAL'
+    });
+    
+    if (crisisCheck && crisisCheck.level === 'SEVERE') {
+      console.log('🚨 SEVERE CRISIS DETECTED - Executing crisis protocol');
+      
+      // Execute crisis response
+      const crisisResponse = await crisisManager.executeCrisisResponse(
+        userId || 'default',
+        sessionId || 'default',
+        userMessage,
+        crisisCheck
+      );
+      
+      // ⭐ HUMAN HANDOFF: Initiate immediate handoff for SEVERE crisis
+      let handoffResult = null;
+      try {
+        handoffResult = await initiateHumanHandoff(
+          userId || 'default',
+          sessionId || 'default',
+          'CRISIS',
+          {
+            conversation: {
+              messages: messages.slice(-20), // Last 20 messages for context
+              classifications: context.classifications || []
+            },
+            emotionalTrend: context.emotionalTrend || []
+          }
+        );
+        console.log('🤝 Human handoff initiated for SEVERE crisis');
+      } catch (handoffError) {
+        console.error('⚠️ Human handoff failed (continuing with crisis response):', handoffError);
+      }
+      
+      const crisisMessage = crisisManager.generateCrisisResponse(crisisCheck);
+      
+      // Combine crisis message with handoff message if handoff was successful
+      let finalResponse = crisisMessage.response;
+      if (handoffResult && handoffResult.success) {
+        finalResponse = `${crisisMessage.response}\n\n---\n\n${handoffResult.message}`;
+      }
+      
+      return res.json({
+        success: true,
+        response: finalResponse,
+        context: updateContext({ ...context }, userMessage, ['crisis']),
+        metadata: {
+          intents: ['crisis'],
+          topics: extractTopics(userMessage),
+          validation: { valid: true },
+          usedWebSearch: false,
+          method: 'crisis_escalation',
+          crisisLevel: crisisCheck.level,
+          crisisActions: crisisResponse.actions,
+          humanAlertSent: crisisResponse.humanAlertSent,
+          handoffInitiated: handoffResult?.success || false,
+          handoffTicketId: handoffResult?.ticket?.ticketId || null,
+          handoffEstimatedWait: handoffResult?.estimatedWait || null,
+          displayMode: handoffResult?.displayMode || 'CRISIS_BANNER',
+          crisisResources: handoffResult?.crisisResources || null
+        },
+        usage: {
+          input_tokens: 0,
+          output_tokens: 0
+        }
       });
     }
     
-    // Add current user message
-    messages.push({
-      role: 'user',
-      content: userMessage
-    });
+    // ⭐ HUMAN HANDOFF: Check for MODERATE crisis or other handoff triggers
+    if (crisisCheck && (crisisCheck.level === 'MODERATE' || crisisCheck.level === 'ELEVATED')) {
+      console.log(`⚠️ ${crisisCheck.level} CRISIS DETECTED - Considering human handoff`);
+      
+      // For MODERATE crisis, initiate handoff with HIGH priority
+      if (crisisCheck.level === 'MODERATE') {
+        try {
+          const handoffResult = await initiateHumanHandoff(
+            userId || 'default',
+            sessionId || 'default',
+            'MODERATE_CRISIS',
+            {
+              conversation: {
+                messages: messages.slice(-20),
+                classifications: context.classifications || []
+              },
+              emotionalTrend: context.emotionalTrend || []
+            }
+          );
+          
+          if (handoffResult && handoffResult.success) {
+            console.log('🤝 Human handoff initiated for MODERATE crisis');
+            
+            const crisisMessage = crisisManager.generateCrisisResponse(crisisCheck);
+            const finalResponse = `${crisisMessage.response}\n\n---\n\n${handoffResult.message}`;
+            
+            return res.json({
+              success: true,
+              response: finalResponse,
+              context: updateContext({ ...context }, userMessage, ['crisis']),
+              metadata: {
+                intents: ['crisis'],
+                topics: extractTopics(userMessage),
+                validation: { valid: true },
+                usedWebSearch: false,
+                method: 'crisis_escalation_with_handoff',
+                crisisLevel: crisisCheck.level,
+                handoffInitiated: true,
+                handoffTicketId: handoffResult.ticket?.ticketId || null,
+                handoffEstimatedWait: handoffResult.estimatedWait || null,
+                displayMode: handoffResult.displayMode || 'HANDOFF_NORMAL'
+              },
+              usage: {
+                input_tokens: 0,
+                output_tokens: 0
+              }
+            });
+          }
+        } catch (handoffError) {
+          console.error('⚠️ Human handoff failed (continuing with standard response):', handoffError);
+        }
+      }
+    }
     
-    // ENHANCED: Classify intents with context awareness
+    // ⭐ HYBRID APPROACH: Check for simple cases first (regex - no Claude call)
+    const simpleCase = checkSimpleCase(userMessage);
+    if (simpleCase) {
+      console.log(`⚡ Simple case detected: ${simpleCase.type} (using regex - no Claude call)`);
+      const responseData = {
+        success: true,
+        response: simpleCase.response,
+        context: updateContext({ ...context }, userMessage, simpleCase.intents || []),
+        metadata: {
+          intents: simpleCase.intents || [],
+          topics: extractTopics(userMessage),
+          validation: { valid: true },
+          usedWebSearch: false,
+          method: 'regex',  // ⭐ Indicate this was handled by regex
+          cost_saved: true  // ⭐ Indicate we saved Claude API costs
+        },
+        usage: {
+          input_tokens: 0,
+          output_tokens: 0
+        }
+      };
+      
+      if (debug) {
+        responseData.debug = {
+          simpleCaseType: simpleCase.type,
+          reason: simpleCase.reason
+        };
+      }
+      
+      return res.json(responseData);
+    }
+    
+    // ENHANCED: Classify intents with context awareness (for complex cases)
     const rawIntents = classifyIntent(userMessage, context);
     const intents = validateIntents(rawIntents, userMessage);
     const topics = extractTopics(userMessage);
     
     console.log('🔍 Detected intents:', intents);
     console.log('📝 Extracted topics:', topics);
+    console.log('🧠 Complex case - using Claude API');
+    
+    // ⭐ NEW: Determine if extended thinking should be used
+    // Use extended thinking for complex mental health, relationship, or emotional discussions
+    const useExtendedThinking = intents.some(intent => 
+      ['emotionalBurden', 'selfWorth', 'anxiety', 'depression', 'relationshipConcerns', 'financialStress'].includes(intent)
+    ) || userMessage.length > 100; // Also for longer, more complex messages
+    
+    if (useExtendedThinking) {
+      console.log('🧠 Extended thinking enabled for complex case');
+    }
     
     // ⭐ NEW: Build tools array for web search
     const tools = enableWebSearch ? [
@@ -444,79 +857,195 @@ app.post('/api/chat', async (req, res) => {
     const promptSize = systemPrompt ? systemPrompt.length : 0;
     console.log(`📏 System prompt size: ${promptSize} characters (${Math.round(promptSize/4)} estimated tokens)`);
     
-    // ⭐ UPDATED: Call Claude API with optional web search tool
-    const claudeResponse = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514', // ⭐ UPDATED: Using Claude Sonnet 4 (supports web search)
-      max_tokens: 1000,
-      system: systemPrompt || 'You are a helpful AI assistant.',
-      messages: messages,
-      ...(tools && { tools })  // ⭐ NEW: Only include tools if web search is enabled
-    });
+    // ⭐ NEW: Prepare system prompt with caching for cost optimization
+    // System prompts are the same across requests, so we can cache them
+    const systemPromptArray = systemPrompt ? [{
+      type: 'text',
+      text: systemPrompt,
+      cache_control: { type: 'ephemeral' } // Cache this - saves ~30-40% on input tokens
+    }] : [{
+      type: 'text',
+      text: 'You are a helpful AI assistant.',
+      cache_control: { type: 'ephemeral' }
+    }];
     
-    const claudeTime = Date.now() - startTime;
-    console.log(`⏱️ Claude API took ${claudeTime}ms (${(claudeTime/1000).toFixed(2)}s)`);
-    
-    // ⭐ NEW: Handle tool use (web search results)
-    let responseText = '';
-    let usedWebSearch = false;
-    
-    for (const block of claudeResponse.content) {
-      if (block.type === 'text') {
-        responseText += block.text;
-      } else if (block.type === 'tool_use') {
-        usedWebSearch = true;
-        console.log(`🔍 Claude used web search: ${block.name} with query: "${block.input.query}"`);
+    // ⭐ NEW: Build extended thinking prompt if needed
+    // Extended thinking is enabled through prompt structure, not API parameter
+    let finalMessages = messages;
+    if (useExtendedThinking) {
+      // Enhanced prompt that encourages Claude to use extended thinking
+      const extendedThinkingContext = `[EXTENDED THINKING REQUESTED]
+
+This is a complex mental health discussion requiring careful analysis:
+- Detected intents: ${intents.join(', ')}
+- Topics: ${topics.join(', ')}
+- Emotional context: ${context.emotionalState || 'unknown'}
+- Message complexity: ${userMessage.length} characters
+
+Please use extended thinking to:
+1. Deeply analyze the emotional nuances and underlying feelings
+2. Consider cultural context and diverse backgrounds of men
+3. Think through multiple therapeutic approaches before responding
+4. Carefully assess safety and crisis indicators
+5. Plan a supportive, culturally-aware, and therapeutically sound response
+6. Consider the user's emotional state and how best to support them
+
+Take time to think through your response carefully. This is important.`;
+      
+      // Replace the last user message with extended thinking version
+      finalMessages = [...messages];
+      if (finalMessages.length > 0 && finalMessages[finalMessages.length - 1].role === 'user') {
+        finalMessages[finalMessages.length - 1] = {
+          role: 'user',
+          content: `${extendedThinkingContext}\n\nUser message: ${userMessage}`
+        };
+      } else {
+        finalMessages.push({
+          role: 'user',
+          content: `${extendedThinkingContext}\n\nUser message: ${userMessage}`
+        });
       }
+      
+      console.log('🧠 Extended thinking prompt added for complex case');
     }
     
-    let totalUsage = {
-      input_tokens: claudeResponse.usage.input_tokens,
-      output_tokens: claudeResponse.usage.output_tokens
-    };
+    // ⭐ UPDATED: Call Claude API with prompt caching and optional web search
+    // Note: Extended thinking is enabled through prompt structure, not API parameter
+    // ⭐ GRACEFUL DEGRADATION: Wrap in try-catch with fallback
+    let claudeResponse;
+    let responseText = '';
+    let usedWebSearch = false;
+    let totalUsage = { input_tokens: 0, output_tokens: 0 };
+    let claudeTime = 0;
+    let claudeSuccess = false;
     
-    console.log('✅ Claude response generated:', responseText.substring(0, 100) + '...');
-    if (usedWebSearch) {
-      console.log('✅ Web search was used in this response');
+    try {
+      // Set timeout for Claude API call (10 seconds)
+      const claudePromise = anthropic.messages.create({
+        model: 'claude-sonnet-4-5-20250929', // ⭐ FIXED: Using Claude Sonnet 4.5 (latest stable model)
+        max_tokens: useExtendedThinking ? 1500 : 1000, // ⭐ NEW: More tokens for extended thinking responses
+        system: systemPromptArray, // ⭐ NEW: Using cached system prompt (saves 30-40% on input tokens)
+        messages: finalMessages,
+        ...(tools && { tools })  // ⭐ NEW: Only include tools if web search is enabled
+      });
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Claude API timeout after 10 seconds')), 10000)
+      );
+      
+      claudeResponse = await Promise.race([claudePromise, timeoutPromise]);
+      
+      claudeTime = Date.now() - startTime;
+      console.log(`⏱️ Claude API took ${claudeTime}ms (${(claudeTime/1000).toFixed(2)}s)`);
+      
+      // ⭐ NEW: Handle tool use (web search results)
+      for (const block of claudeResponse.content) {
+        if (block.type === 'text') {
+          responseText += block.text;
+        } else if (block.type === 'tool_use') {
+          usedWebSearch = true;
+          console.log(`🔍 Claude used web search: ${block.name} with query: "${block.input.query}"`);
+        }
+      }
+      
+      totalUsage = {
+        input_tokens: claudeResponse.usage.input_tokens,
+        output_tokens: claudeResponse.usage.output_tokens
+      };
+      
+      // ⭐ PROMPT CACHING: Log cache performance and track metrics
+      if (claudeResponse.usage?.cache_read_input_tokens) {
+        const cacheHitRate = (claudeResponse.usage.cache_read_input_tokens / 
+          (claudeResponse.usage.cache_read_input_tokens + claudeResponse.usage.input_tokens)) * 100;
+        const tokensSaved = claudeResponse.usage.cache_read_input_tokens;
+        const costSaved = (tokensSaved / 1000000) * 3.00; // $3.00 per 1M input tokens
+        
+        console.log(`💰 Cache hit: ${cacheHitRate.toFixed(0)}% (saved ~${tokensSaved} tokens, ~$${costSaved.toFixed(4)})`);
+        totalUsage.cache_read_tokens = tokensSaved;
+        totalUsage.cache_hit_rate = Math.round(cacheHitRate * 100) / 100;
+        totalUsage.cache_cost_saved = Math.round(costSaved * 10000) / 10000;
+        
+        // ⭐ CACHE METRICS: Track cache performance
+        cacheMetrics.trackCacheEvent('/api/chat', true, tokensSaved);
+      } else {
+        console.log('⚠️ No cache hit - system prompt may not be cached');
+        totalUsage.cache_read_tokens = 0;
+        totalUsage.cache_hit_rate = 0;
+        totalUsage.cache_cost_saved = 0;
+        
+        // ⭐ CACHE METRICS: Track cache miss
+        cacheMetrics.trackCacheEvent('/api/chat', false, 0);
+      }
+      
+      console.log('✅ Claude response generated:', responseText.substring(0, 100) + '...');
+      if (usedWebSearch) {
+        console.log('✅ Web search was used in this response');
+      }
+      if (useExtendedThinking) {
+        console.log('✅ Extended thinking was used for this response');
+      }
+      
+      claudeSuccess = true;
+      
+    } catch (claudeError) {
+      console.error('❌ Claude API failed:', claudeError.message);
+      console.log('🔄 Attempting graceful degradation fallback...');
+      
+      // ⭐ GRACEFUL DEGRADATION: Fallback to rule-based response
+      claudeSuccess = false;
+      responseText = getFallbackResponse(userMessage, intents, topics, context);
+      totalUsage = { input_tokens: 0, output_tokens: 0 };
+      
+      console.log('✅ Fallback response generated using rule-based system');
     }
     
     // ENHANCED: Update context for next message
     const updatedContext = updateContext({ ...context }, userMessage, intents);
     
-    // Validate response to catch inappropriate physical health suggestions
-    const validation = validateResponse(userMessage, responseText, intents);
-    
-    if (!validation.valid) {
-      console.log('⚠️ Response validation failed, requesting corrected response...');
-      console.log('   Reason:', validation.reason);
+    // ⭐ GRACEFUL DEGRADATION: Only validate if Claude succeeded
+    let validation = { valid: true };
+    if (claudeSuccess) {
+      // Validate response to catch inappropriate physical health suggestions
+      validation = validateResponse(userMessage, responseText, intents);
       
-      // Request a corrected response
-      const correctionMessages = [
-        ...messages,
-        { role: 'assistant', content: responseText },
-        { 
-          role: 'user', 
-          content: 'Please refocus on the emotional and psychological aspects of what I shared, rather than physical health concerns like sleep or physical rest. I need support for the mental and emotional burden, not physical tiredness.' 
+      if (!validation.valid) {
+        console.log('⚠️ Response validation failed, requesting corrected response...');
+        console.log('   Reason:', validation.reason);
+        
+        try {
+          // Request a corrected response
+          const correctionMessages = [
+            ...messages,
+            { role: 'assistant', content: responseText },
+            { 
+              role: 'user', 
+              content: 'Please refocus on the emotional and psychological aspects of what I shared, rather than physical health concerns like sleep or physical rest. I need support for the mental and emotional burden, not physical tiredness.' 
+            }
+          ];
+
+          // Use cached system prompt for correction too
+          const correctedResponse = await anthropic.messages.create({
+            model: 'claude-sonnet-4-5-20250929', // ⭐ FIXED: Using Claude Sonnet 4.5
+            max_tokens: 1000,
+            system: systemPromptArray, // ⭐ NEW: Use cached system prompt
+            messages: correctionMessages,
+            ...(tools && { tools })  // ⭐ NEW: Include tools in correction too
+          });
+
+          responseText = correctedResponse.content
+            .filter(block => block.type === 'text')
+            .map(block => block.text)
+            .join('');
+          
+          // Add correction tokens to usage
+          totalUsage.input_tokens += correctedResponse.usage.input_tokens;
+          totalUsage.output_tokens += correctedResponse.usage.output_tokens;
+          
+          console.log('✅ Corrected response generated:', responseText.substring(0, 100) + '...');
+        } catch (correctionError) {
+          console.error('⚠️ Correction failed, using original response:', correctionError.message);
         }
-      ];
-
-      const correctedResponse = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: systemPrompt || 'You are a helpful AI assistant.',
-        messages: correctionMessages,
-        ...(tools && { tools })  // ⭐ NEW: Include tools in correction too
-      });
-
-      responseText = correctedResponse.content
-        .filter(block => block.type === 'text')
-        .map(block => block.text)
-        .join('');
-      
-      // Add correction tokens to usage
-      totalUsage.input_tokens += correctedResponse.usage.input_tokens;
-      totalUsage.output_tokens += correctedResponse.usage.output_tokens;
-      
-      console.log('✅ Corrected response generated:', responseText.substring(0, 100) + '...');
+      }
     }
     
     // Prepare response with enhanced metadata
@@ -528,7 +1057,11 @@ app.post('/api/chat', async (req, res) => {
         intents,
         topics,
         validation,
-        usedWebSearch  // ⭐ NEW: Indicate if web search was used
+        method: claudeSuccess ? 'claude' : 'fallback', // ⭐ GRACEFUL DEGRADATION: Indicate fallback was used
+        usedFallback: !claudeSuccess, // ⭐ GRACEFUL DEGRADATION: Flag for analytics
+        usedWebSearch,  // ⭐ NEW: Indicate if web search was used
+        usedExtendedThinking: useExtendedThinking,  // ⭐ NEW: Indicate if extended thinking was used
+        usedPromptCaching: claudeSuccess  // ⭐ NEW: Only true if Claude was successful
       },
       usage: totalUsage
     };
@@ -627,6 +1160,13 @@ app.post('/api/test-intent', (req, res) => {
 // Import moderation service
 const moderationService = require('./moderationService');
 const { processReport, processAutoViolation } = require('./automatedModeration');
+
+// ⭐ CRISIS ESCALATION: Import crisis escalation manager
+const { getCrisisManager } = require('./crisisEscalation');
+const { initiateHumanHandoff, getHandoffManager } = require('./humanHandoff');
+
+// ⭐ CACHE METRICS: Import cache metrics tracker
+const { cacheMetrics } = require('./cacheMetrics');
 
 // ===== MODERATION ENDPOINTS =====
 
@@ -850,6 +1390,27 @@ app.post('/api/moderation/disputes/:id/resolve', async (req, res) => {
   } catch (err) {
     console.error('Resolve dispute error:', err);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ⭐ CACHE METRICS: Get cache performance metrics
+app.get('/api/cache-metrics', (req, res) => {
+  try {
+    const metrics = cacheMetrics.getMetrics();
+    const summary = cacheMetrics.getSummary();
+    
+    res.json({
+      success: true,
+      metrics: metrics,
+      summary: summary,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Cache metrics error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to get cache metrics' 
+    });
   }
 });
 

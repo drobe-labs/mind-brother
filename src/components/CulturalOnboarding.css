@@ -1,0 +1,456 @@
+/* Cultural Onboarding Styles */
+/* Mind Brother - Culturally Adaptive Mental Health for Black and Brown Men */
+
+.cultural-onboarding {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #0A0A0A 0%, #121218 100%);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Header */
+.onboarding-header {
+  padding: 24px;
+  padding-top: 16px;
+  background: linear-gradient(180deg, #1A1A1F 0%, #141418 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.onboarding-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin: 0 0 6px 0;
+  letter-spacing: -0.02em;
+}
+
+.onboarding-subtitle {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0 0 16px 0;
+}
+
+.progress-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00D9FF 0%, #00B4CC 100%);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* Content */
+.onboarding-content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.step-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding-bottom: 40px;
+}
+
+.step-icon {
+  display: block;
+  font-size: 3rem;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.step-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin: 0 0 12px 0;
+  text-align: center;
+  letter-spacing: -0.02em;
+}
+
+.substep-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #FFFFFF;
+  margin: 32px 0 12px 0;
+  text-align: center;
+}
+
+.step-description {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.6;
+  margin: 0 0 24px 0;
+  text-align: center;
+}
+
+.step-description strong {
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+.optional {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.4);
+  font-style: italic;
+}
+
+/* Info Box */
+.info-box {
+  background: linear-gradient(135deg, rgba(0, 217, 255, 0.08) 0%, rgba(0, 180, 204, 0.04) 100%);
+  border: 1px solid rgba(0, 217, 255, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.info-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #00D9FF;
+  margin: 0 0 8px 0;
+}
+
+.info-text {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.info-text strong {
+  color: #FFFFFF;
+}
+
+/* Bullet Points */
+.bullet-points {
+  margin-top: 24px;
+}
+
+.bullet-point {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.bullet-icon {
+  color: #00D9FF;
+  font-size: 1rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.bullet-text {
+  font-size: 0.9375rem;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.4;
+}
+
+/* Options List */
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+/* Option Card */
+.option-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  width: 100%;
+}
+
+.option-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.option-card.selected {
+  background: linear-gradient(135deg, rgba(0, 217, 255, 0.12) 0%, rgba(0, 180, 204, 0.06) 100%);
+  border-color: #00D9FF;
+}
+
+.option-card.compact {
+  padding: 12px 16px;
+}
+
+.option-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.option-label {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #FFFFFF;
+  transition: color 0.2s ease;
+}
+
+.option-card.selected .option-label {
+  color: #00D9FF;
+}
+
+.option-description {
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.4;
+}
+
+.option-card.selected .option-description {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.checkmark {
+  font-size: 1.25rem;
+  color: #00D9FF;
+  flex-shrink: 0;
+}
+
+/* Age Grid */
+.age-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.age-button {
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.age-button:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.age-button.selected {
+  background: linear-gradient(135deg, rgba(0, 217, 255, 0.12) 0%, rgba(0, 180, 204, 0.06) 100%);
+  border-color: #00D9FF;
+  color: #00D9FF;
+}
+
+/* Navigation */
+.onboarding-navigation {
+  padding: 20px 24px;
+  background: linear-gradient(180deg, #141418 0%, #1A1A1F 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.skip-button {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.875rem;
+  cursor: pointer;
+  text-decoration: underline;
+  margin-bottom: 12px;
+  transition: color 0.2s ease;
+}
+
+.skip-button:hover {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.skip-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.nav-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.back-button {
+  flex: 1;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  border-radius: 12px;
+  color: #FFFFFF;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.back-button:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.back-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.next-button {
+  flex: 2;
+  padding: 16px;
+  background: linear-gradient(135deg, #00D9FF 0%, #00B4CC 100%);
+  border: none;
+  border-radius: 12px;
+  color: #000000;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.next-button:hover {
+  background: linear-gradient(135deg, #00E5FF 0%, #00C8E0 100%);
+  transform: translateY(-1px);
+}
+
+.next-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.next-button.full-width {
+  flex: 1;
+}
+
+/* Mobile Responsive */
+@media (max-width: 600px) {
+  .onboarding-header {
+    padding: 16px;
+  }
+
+  .onboarding-content {
+    padding: 16px;
+  }
+
+  .step-icon {
+    font-size: 2.5rem;
+    margin-bottom: 16px;
+  }
+
+  .step-title {
+    font-size: 1.5rem;
+  }
+
+  .options-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .age-grid {
+    justify-content: flex-start;
+  }
+
+  .age-button {
+    padding: 10px 16px;
+    font-size: 0.875rem;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.step-container {
+  animation: fadeIn 0.3s ease;
+}
+
+/* Language Step Specific Styles */
+.language-section {
+  margin-bottom: 28px;
+}
+
+.section-subtitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0 0 16px 0;
+  text-align: left;
+}
+
+.toggle-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.toggle-switch {
+  flex-shrink: 0;
+  margin-left: 16px;
+}
+
+.toggle-track {
+  width: 48px;
+  height: 26px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 13px;
+  padding: 3px;
+  transition: background 0.2s ease;
+  cursor: pointer;
+}
+
+.toggle-track.active {
+  background: linear-gradient(90deg, #00D9FF 0%, #00B4CC 100%);
+}
+
+.toggle-thumb {
+  width: 20px;
+  height: 20px;
+  background: #FFFFFF;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+}
+
+.toggle-track.active .toggle-thumb {
+  transform: translateX(22px);
+}
+
+.language-examples {
+  margin-top: 20px;
+  text-align: left;
+}
+
+.language-examples .info-text {
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.8;
+}
+

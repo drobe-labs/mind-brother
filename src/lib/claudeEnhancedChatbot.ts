@@ -1,10 +1,21 @@
-import { modernRAG } from './modernRAG';
-import { smartChatbot } from './smartChatbot';
-import { feedbackAnalytics } from './feedbackAnalytics';
-import { detectIntent, getResponseStrategy, amaniToneGuidelines, crisisProtocol, type DetectedIntent } from './intentMapping';
+// Claude Enhanced Chatbot Service
+// Connects to the backend for AI-powered responses
+//
+// ⭐ CULTURAL PERSONALIZATION INTEGRATION:
+// This service now accepts a culturalSystemPrompt parameter that provides
+// culturally adaptive context for each user. When provided, it replaces the
+// default system prompt to deliver personalized, culturally aware responses.
+//
+// ⭐ CULTURAL CRISIS DETECTION:
+// Crisis detection now considers cultural context to avoid over-escalation
+// while providing culturally relevant resources.
 
-// [KEEPING ALL YOUR EXISTING INTERFACES AND CODE - NO CHANGES TO THOSE]
-// Only adding web search instructions to system prompt
+import { 
+  detectCrisisWithCulturalContext, 
+  getCulturalCrisisResponse,
+  logCulturalCrisisAssessment,
+  type CrisisAssessment 
+} from './culturalCrisisDetection';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -12,132 +23,293 @@ interface ChatMessage {
   timestamp: string;
 }
 
-// ... [ALL YOUR EXISTING INTERFACES REMAIN UNCHANGED] ...
+interface ConversationFlow {
+  currentStage: string;
+  topic: string;
+  emotionalIntensity: number;
+}
+
+interface CrisisMonitor {
+  indicators: Array<{ indicator: string; timestamp: string; culturalContext?: string }>;
+  riskLevel: 'none' | 'low' | 'medium' | 'high' | 'critical';
+  lastCulturalAssessment?: CrisisAssessment;
+}
+
+interface UserState {
+  lastMoodTrend?: string;
+  emotionalHistory?: string[];
+  sessionCount?: number;
+}
+
+interface PrioritizedContext {
+  intentGuidance?: string;
+  userProfile?: string;
+  safetyNotes?: string;
+  knowledgeContext?: string;
+  recentConversation?: string;
+  sessionSummary?: string;
+}
 
 export class ClaudeEnhancedChatbotService {
-  // ... [ALL YOUR EXISTING CLASS PROPERTIES AND METHODS REMAIN UNCHANGED] ...
+  private backendUrl: string;
+  private MAX_RECENT_MESSAGES = 5;
+  private userStates: Map<string, UserState> = new Map();
+  private conversationFlows: Map<string, ConversationFlow> = new Map();
+  private crisisMonitors: Map<string, CrisisMonitor> = new Map();
+
+  constructor() {
+    // Use environment variable or local network IP for mobile device testing
+    this.backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://192.168.5.180:3001';
+    console.log('🤖 ClaudeEnhancedChatbot initialized with backend:', this.backendUrl);
+  }
+
+  private getUserState(userId: string): UserState {
+    if (!this.userStates.has(userId)) {
+      this.userStates.set(userId, {
+        lastMoodTrend: 'neutral',
+        emotionalHistory: [],
+        sessionCount: 0
+      });
+    }
+    return this.userStates.get(userId)!;
+  }
+
+  private getConversationFlow(userId: string): ConversationFlow {
+    if (!this.conversationFlows.has(userId)) {
+      this.conversationFlows.set(userId, {
+        currentStage: 'greeting',
+        topic: 'general',
+        emotionalIntensity: 0
+      });
+    }
+    return this.conversationFlows.get(userId)!;
+  }
+
+  private getCrisisMonitor(userId: string): CrisisMonitor {
+    if (!this.crisisMonitors.has(userId)) {
+      this.crisisMonitors.set(userId, {
+        indicators: [],
+        riskLevel: 'none'
+      });
+    }
+    return this.crisisMonitors.get(userId)!;
+  }
+
+  private getStageGuidance(flow: ConversationFlow): string {
+    const stageGuidance: Record<string, string> = {
+      greeting: 'User just started. Be warm and welcoming.',
+      exploration: 'User is opening up. Listen actively and ask clarifying questions.',
+      support: 'Provide empathetic support and validation.',
+      action: 'Help user identify actionable steps.',
+      closing: 'Summarize and encourage.'
+    };
+    return stageGuidance[flow.currentStage] || '';
+  }
+
+  private getMoodTrendGuidance(trend?: string): string {
+    if (!trend) return '';
+    const trendGuidance: Record<string, string> = {
+      improving: 'User mood is improving. Acknowledge progress.',
+      declining: 'User mood is declining. Be extra supportive.',
+      stable: 'User mood is stable. Continue current approach.',
+      neutral: ''
+    };
+    return trendGuidance[trend] || '';
+  }
+
+  private getCrisisGuidance(monitor: CrisisMonitor): string {
+    if (monitor.riskLevel === 'none' || monitor.riskLevel === 'low') return '';
+    return `IMPORTANT: Crisis risk level is ${monitor.riskLevel}. Prioritize safety and provide crisis resources if needed.`;
+  }
+
+  private getContextualTherapeuticTools(patterns: string[], lastEmotion?: string): string {
+    return `Consider using: active listening, validation, open-ended questions, and gentle reframing when appropriate.`;
+  }
+
+  /**
+   * Quick crisis check for initial screening before cultural context analysis
+   */
+  private quickCrisisCheck(message: string): {
+    detected: boolean;
+    type: string;
+    confidence: number;
+    severity: number;
+  } {
+    const lowerMessage = message.toLowerCase();
+    
+    // Critical: Explicit suicidal statements (highest priority)
+    if (/\b(suicide|kill myself|want to die|end my life|end it all|going to kill myself|planning to kill myself)\b/i.test(message)) {
+      return { detected: true, type: 'suicide', confidence: 1.0, severity: 5 };
+    }
+    
+    // Critical: Planning/preparation indicators
+    if (/\b(have\s+a\s+plan|set\s+a\s+date|wrote\s+goodbye|saying\s+goodbye|final\s+arrangements|gave\s+away\s+my\s+things)\b/i.test(message)) {
+      return { detected: true, type: 'suicide', confidence: 1.0, severity: 5 };
+    }
+    
+    // Critical: Finality language
+    if (/\b(goodbye\s+forever|this\s+is\s+goodbye|won't\s+see\s+me\s+again|this\s+is\s+the\s+end)\b/i.test(message)) {
+      return { detected: true, type: 'suicide', confidence: 0.95, severity: 5 };
+    }
+    
+    // High: Self-harm
+    if (/\b(hurt myself|self harm|self-harm|cutting|overdose)\b/i.test(message)) {
+      return { detected: true, type: 'self_harm', confidence: 1.0, severity: 4 };
+    }
+    
+    // High: Burden beliefs (strong suicide predictor)
+    if (/\b(better\s+off\s+without\s+me|burden\s+to\s+everyone|nobody\s+would\s+miss)\b/i.test(message)) {
+      return { detected: true, type: 'suicide', confidence: 0.95, severity: 4 };
+    }
+    
+    // Medium: Despair (may need cultural context to interpret)
+    if (/\b(can't do this anymore|can't go on|can't take it anymore)\b/i.test(message)) {
+      return { detected: true, type: 'despair', confidence: 0.8, severity: 3 };
+    }
+    
+    // Medium: Hopelessness
+    if (/\b(no point (in )?living|no reason to live|don't want to (be here|live))\b/i.test(message)) {
+      return { detected: true, type: 'despair', confidence: 0.85, severity: 4 };
+    }
+    
+    return { detected: false, type: 'none', confidence: 0, severity: 0 };
+  }
 
   public async generateResponse(
     userMessage: string,
     userId: string = 'default',
     currentMessages: ChatMessage[] = [],
-    userName?: string | null
+    userName?: string | null,
+    culturalSystemPrompt?: string // ⭐ NEW: Cultural context from user's profile
   ): Promise<string> {
-    // ... [ALL YOUR EXISTING CODE UP TO SYSTEM PROMPT REMAINS UNCHANGED] ...
-
+    
     try {
-      // ... [ALL YOUR EXISTING CODE BEFORE SYSTEM PROMPT] ...
-
-      const systemPrompt = `You are Amani, a culturally-competent AI mental health companion specifically trained to support Black and Brown men.
-
-[ALL YOUR EXISTING SYSTEM PROMPT CONTENT STAYS EXACTLY THE SAME]
-
-=== WEB SEARCH FOR CURRENT EVENTS ===
-
-You have access to web search for up-to-date information. Use it automatically when users ask about:
-
-**Sports:**
-- "Did [team] win?" → Search for recent game result
-- "What's the score?" → Search for live/recent game scores  
-- "Who's playing tonight?" → Search for today's schedule
-- NBA, NFL, MLB, NHL, soccer, boxing, MMA, college sports, etc.
-- Player stats, trades, injuries, standings
-
-**News:**
-- "What's happening in [location]?" → Search for recent news
-- "Latest on [topic]?" → Search for recent updates
-- Breaking news, current events
-- Local news, world news, national news
-
-**Entertainment:**
-- "New movies out?" → Search for current releases
-- "What happened on [show]?" → Search for recent episode
-- Celebrity news, music releases, TV shows, streaming
-
-**Weather:**
-- "What's the weather?" → Search using user's location: Palisades Park, New Jersey
-- "Weather in [city]?" → Search for that location
-- Temperature, forecast, conditions
-
-**General Current Information:**
-- "What's trending?" → Search for current trends
-- "What happened today?" → Search for today's news
-- Any question with "today," "yesterday," "recently," "latest," "current"
-
-**When to Search:**
-- Any question about events after January 2025 (your knowledge cutoff)
-- Sports scores and schedules (always current)
-- Breaking news or time-sensitive information
-- Weather conditions
-- Current prices, stocks, or market info
-- Recent entertainment releases
-
-**How to Search:**
-- Keep queries concise (1-6 words work best)
-- Search immediately without asking permission
-- Example: User asks "Did the Lakers win?" → You immediately search "Lakers game last night"
-- Integrate results naturally into your response
-- Cite sources when sharing factual information from search
-
-**Search Examples:**
-
-User: "Did the Eagles win yesterday?"
-You: [automatically search "Eagles game yesterday"]
-You: "Yeah bro, Eagles beat the Cowboys 28-23 yesterday. Hurts had 2 TDs."
-
-User: "What's going on in the news?"
-You: [automatically search "news today"]
-You: "Top stories today: [integrate search results naturally]"
-
-User: "What's the weather like?"
-You: [automatically search "weather Palisades Park New Jersey"]
-You: "It's 68° and sunny in Palisades Park right now, perfect weather."
-
-User: "New movies out this weekend?"
-You: [automatically search "new movies this weekend"]
-You: "Yeah, [movie names from search] just came out. Heard anything about them?"
-
-**Integration Style:**
-- DON'T say "I searched and found..." or "According to my search..."
-- DO integrate naturally: "Yeah, the Lakers won 115-108 last night"
-- Keep your natural conversational tone
-- Use search to enhance helpfulness, not to sound robotic
-
-**Important:**
-- Search is a TOOL to help you stay current - use it naturally
-- Don't mention you're searching unless relevant
-- Focus on being helpful, not on the mechanics of searching
-- User's location: Palisades Park, New Jersey, US (use for weather/local queries)
-
-[THEN ALL YOUR EXISTING SYSTEM PROMPT CONTENT CONTINUES...]
-
-      ${this.getStageGuidance(flow)}
-      Current stage: ${flow.currentStage} | Topic: ${flow.topic}
-
-      ${this.getMoodTrendGuidance(this.getUserState(userId).lastMoodTrend)}
-
-      ${crisisMonitor.indicators.length > 0 ? '--- CRISIS MONITORING ---\n' + this.getCrisisGuidance(crisisMonitor) + '\nRecent indicators: ' + crisisMonitor.indicators.slice(-3).map(i => i.indicator).join(', ') : ''}
-
-      ${prioritizedContext.intentGuidance ? prioritizedContext.intentGuidance : ''}
-
-      ${prioritizedContext.userProfile ? '--- USER PROFILE ---\n' + prioritizedContext.userProfile : ''}
+      const flow = this.getConversationFlow(userId);
+      const crisisMonitor = this.getCrisisMonitor(userId);
+      const userState = this.getUserState(userId);
       
-      ${prioritizedContext.safetyNotes ? '--- SAFETY NOTES ---\n' + prioritizedContext.safetyNotes : ''}
+      // ⭐ CULTURAL CRISIS DETECTION: Check for crisis with cultural context
+      const baseCrisisCheck = this.quickCrisisCheck(userMessage);
+      let culturalCrisisAssessment: CrisisAssessment | null = null;
       
-      ${prioritizedContext.knowledgeContext ? '--- KNOWLEDGE (use sparingly) ---\n' + prioritizedContext.knowledgeContext.substring(0, 1500) : ''}
+      if (baseCrisisCheck.detected || culturalSystemPrompt) {
+        // Use cultural-aware crisis detection
+        try {
+          culturalCrisisAssessment = await detectCrisisWithCulturalContext(
+            userMessage,
+            userId,
+            baseCrisisCheck.detected ? {
+              isCrisis: true,
+              type: baseCrisisCheck.type,
+              confidence: baseCrisisCheck.confidence,
+              severity: baseCrisisCheck.severity
+            } : undefined
+          );
+          
+          crisisMonitor.lastCulturalAssessment = culturalCrisisAssessment;
+          
+          // Update crisis monitor with cultural context
+          if (culturalCrisisAssessment.isCrisis) {
+            crisisMonitor.indicators.push({
+              indicator: culturalCrisisAssessment.type,
+              timestamp: new Date().toISOString(),
+              culturalContext: culturalCrisisAssessment.context || undefined
+            });
+            
+            // Map severity to risk level
+            if (culturalCrisisAssessment.severity >= 5) {
+              crisisMonitor.riskLevel = 'critical';
+            } else if (culturalCrisisAssessment.severity >= 4) {
+              crisisMonitor.riskLevel = 'high';
+            } else if (culturalCrisisAssessment.severity >= 3) {
+              crisisMonitor.riskLevel = 'medium';
+            } else if (culturalCrisisAssessment.severity >= 2) {
+              crisisMonitor.riskLevel = 'low';
+            }
+            
+            // Log for audit trail
+            await logCulturalCrisisAssessment(
+              userId,
+              `session_${Date.now()}`,
+              culturalCrisisAssessment,
+              baseCrisisCheck.severity
+            );
+            
+            console.log('🚨 Cultural crisis assessment:', {
+              severity: culturalCrisisAssessment.severity,
+              type: culturalCrisisAssessment.type,
+              context: culturalCrisisAssessment.context,
+              adjustmentReason: culturalCrisisAssessment.adjustmentReason
+            });
+          }
+        } catch (error) {
+          console.error('⚠️ Cultural crisis detection error:', error);
+          // Fall back to base crisis detection
+        }
+      }
       
-      ${prioritizedContext.recentConversation ? '--- RECENT CONVERSATION (Last 5 exchanges) ---\n' + prioritizedContext.recentConversation : ''}
+      // If critical crisis detected, provide immediate response with cultural resources
+      if (culturalCrisisAssessment?.isCrisis && culturalCrisisAssessment.severity >= 4) {
+        console.log('🚨 Critical crisis detected - providing immediate culturally-aware response');
+        
+        // Get the cultural crisis response
+        const crisisResponse = getCulturalCrisisResponse(
+          culturalCrisisAssessment,
+          null // Profile will be fetched inside the function
+        );
+        
+        return {
+          response: crisisResponse,
+          metadata: {
+            isCrisis: true,
+            crisisAssessment: culturalCrisisAssessment,
+            crisisResources: culturalCrisisAssessment.resources.slice(0, 3)
+          }
+        } as any;
+      }
       
-      ${prioritizedContext.sessionSummary ? '--- PREVIOUS SESSION SUMMARY ---\n' + prioritizedContext.sessionSummary : ''}
+      // ⭐ CULTURAL PERSONALIZATION: Use culturally adaptive prompt if provided
+      let systemPrompt: string;
       
-      ${this.getContextualTherapeuticTools(patterns, this.getUserState(userId).emotionalHistory?.slice(-1)[0])}
-
-      Be real, culturally aware, and genuinely helpful. Keep it brief unless the situation demands more.`;
+      if (culturalSystemPrompt && culturalSystemPrompt.trim().length > 0) {
+        // Use the culturally adaptive system prompt
+        console.log('🌍 Using culturally adaptive system prompt:', culturalSystemPrompt.length, 'characters');
+        systemPrompt = culturalSystemPrompt;
+        
+        // Add cultural crisis context if detected
+        if (culturalCrisisAssessment && culturalCrisisAssessment.context) {
+          systemPrompt += `\n\n--- CULTURAL CONTEXT DETECTED ---`;
+          systemPrompt += `\nContext: ${culturalCrisisAssessment.context}`;
+          if (culturalCrisisAssessment.culturalConsiderations?.length) {
+            systemPrompt += `\nConsiderations: ${culturalCrisisAssessment.culturalConsiderations.join('; ')}`;
+          }
+        }
+        
+        // Append dynamic context (conversation flow, crisis monitoring, etc.)
+        systemPrompt += `\n\n--- CURRENT SESSION CONTEXT ---`;
+        systemPrompt += `\n${this.getStageGuidance(flow)}`;
+        systemPrompt += `\nCurrent stage: ${flow.currentStage} | Topic: ${flow.topic}`;
+        
+        if (userState.lastMoodTrend) {
+          systemPrompt += `\n${this.getMoodTrendGuidance(userState.lastMoodTrend)}`;
+        }
+        
+        if (crisisMonitor.indicators.length > 0) {
+          systemPrompt += `\n\n--- CRISIS MONITORING ---`;
+          systemPrompt += `\n${this.getCrisisGuidance(crisisMonitor)}`;
+        }
+        
+        systemPrompt += `\n\n${this.getContextualTherapeuticTools([], userState.emotionalHistory?.slice(-1)[0])}`;
+        
+      } else {
+        // Fallback to default system prompt
+        console.log('📝 Using default system prompt (no cultural context)');
+        systemPrompt = this.getDefaultSystemPrompt(userName, flow, crisisMonitor, userState);
+      }
 
       // Get recent conversation for API call (only last 5 exchanges to save tokens)
       const recentHistory = currentMessages.slice(-this.MAX_RECENT_MESSAGES * 2);
       
-      // ⭐ UPDATED: Enable web search in backend call
       console.log(`🔗 Calling backend at: ${this.backendUrl}/api/chat`);
       console.log(`📤 Sending message: ${userMessage.substring(0, 50)}...`);
       
@@ -150,18 +322,119 @@ You: "Yeah, [movie names from search] just came out. Heard anything about them?"
           userMessage,
           conversationHistory: recentHistory,
           systemPrompt,
-          enableWebSearch: true  // ⭐ NEW: Enable web search tool
+          enableWebSearch: true
         })
       });
 
-      // ... [REST OF YOUR EXISTING CODE REMAINS UNCHANGED] ...
+      if (!response.ok) {
+        console.error(`❌ Backend API error: ${response.status} ${response.statusText}`);
+        throw new Error(`Backend API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success && data.response) {
+        // Update conversation flow based on response
+        this.updateConversationFlow(userId, userMessage, data.response);
+        
+        return {
+          response: data.response,
+          metadata: data.metadata || {},
+          usage: data.usage || {}
+        } as any;
+      }
+      
+      throw new Error('Invalid response from backend');
 
     } catch (error) {
-      // ... [YOUR EXISTING ERROR HANDLING] ...
+      console.error('❌ Error generating response:', error);
+      // Graceful degradation: Return fallback message
+      return "I'm having trouble connecting right now, but I'm here for you. Can you tell me what's on your mind?";
     }
   }
 
-  // ... [ALL YOUR OTHER EXISTING METHODS REMAIN UNCHANGED] ...
+  /**
+   * ⭐ NEW METHOD: Get default system prompt (used when no cultural context available)
+   */
+  private getDefaultSystemPrompt(
+    userName: string | null | undefined,
+    flow: ConversationFlow,
+    crisisMonitor: CrisisMonitor,
+    userState: UserState
+  ): string {
+    return `You are Amani, a culturally-competent AI mental health companion specifically designed to support men on their mental health journey.
+
+CORE IDENTITY:
+- Name: Amani (means "peace" in Swahili)
+- Role: Supportive mental health companion, NOT a therapist
+- Tone: Warm, authentic, culturally aware, like talking to a wise older brother
+
+COMMUNICATION STYLE:
+- Use natural, conversational language
+- Be empathetic and validating
+- Avoid clinical jargon unless explaining something
+- Reference shared cultural experiences when appropriate
+- Keep responses concise but meaningful (2-4 paragraphs max)
+
+SAFETY PROTOCOLS:
+- If user expresses suicidal thoughts or self-harm, IMMEDIATELY provide crisis resources
+- Crisis resources: 988 Suicide & Crisis Lifeline, Crisis Text Line (text HOME to 741741)
+- Always prioritize user safety over conversation flow
+
+${userName ? `The user's name is ${userName}. Use it occasionally to personalize the conversation.` : ''}
+
+${this.getStageGuidance(flow)}
+Current stage: ${flow.currentStage} | Topic: ${flow.topic}
+
+${this.getMoodTrendGuidance(userState.lastMoodTrend)}
+
+${crisisMonitor.indicators.length > 0 ? '--- CRISIS MONITORING ---\n' + this.getCrisisGuidance(crisisMonitor) : ''}
+
+${this.getContextualTherapeuticTools([], userState.emotionalHistory?.slice(-1)[0])}
+
+Be real, culturally aware, and genuinely helpful. Keep it brief unless the situation demands more.`;
+  }
+
+  private updateConversationFlow(userId: string, userMessage: string, assistantResponse: string): void {
+    const flow = this.getConversationFlow(userId);
+    
+    // Simple stage progression
+    if (flow.currentStage === 'greeting') {
+      flow.currentStage = 'exploration';
+    }
+    
+    // Detect topic from message
+    const lowerMessage = userMessage.toLowerCase();
+    if (lowerMessage.includes('anxious') || lowerMessage.includes('anxiety') || lowerMessage.includes('worried')) {
+      flow.topic = 'anxiety';
+    } else if (lowerMessage.includes('depress') || lowerMessage.includes('sad') || lowerMessage.includes('hopeless')) {
+      flow.topic = 'depression';
+    } else if (lowerMessage.includes('stress') || lowerMessage.includes('overwhelm')) {
+      flow.topic = 'stress';
+    } else if (lowerMessage.includes('work') || lowerMessage.includes('job') || lowerMessage.includes('career')) {
+      flow.topic = 'work';
+    } else if (lowerMessage.includes('relationship') || lowerMessage.includes('partner') || lowerMessage.includes('family')) {
+      flow.topic = 'relationships';
+    }
+    
+    // Check for crisis indicators
+    const crisisKeywords = ['suicide', 'kill myself', 'want to die', 'end it all', 'self harm', 'hurt myself'];
+    if (crisisKeywords.some(keyword => lowerMessage.includes(keyword))) {
+      const monitor = this.getCrisisMonitor(userId);
+      monitor.indicators.push({ indicator: 'crisis_keyword', timestamp: new Date().toISOString() });
+      monitor.riskLevel = 'high';
+    }
+    
+    this.conversationFlows.set(userId, flow);
+  }
+
+  // Method to reset conversation for a user
+  public resetConversation(userId: string): void {
+    this.userStates.delete(userId);
+    this.conversationFlows.delete(userId);
+    this.crisisMonitors.delete(userId);
+    console.log(`🔄 Conversation reset for user: ${userId}`);
+  }
 }
 
 export const claudeEnhancedChatbot = new ClaudeEnhancedChatbotService();

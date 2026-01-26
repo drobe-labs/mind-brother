@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "725413256892",
+    "project_id": "mind-brother",
+    "storage_bucket": "mind-brother.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:725413256892:android:95e98b15ad0c504efc7ab9",
+        "android_client_info": {
+          "package_name": "com.mindbrother.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC6tAmMJ3S1L4pGZ7aQHf6pM9aytnk9RDE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

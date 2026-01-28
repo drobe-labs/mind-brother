@@ -973,8 +973,9 @@ Take time to think through your response carefully. This is important.`;
         ...(tools && { tools })  // ⭐ NEW: Only include tools if web search is enabled
       });
       
+      // ⭐ Increased timeout for international users (UK, etc.) who have more latency
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Claude API timeout after 10 seconds')), 10000)
+        setTimeout(() => reject(new Error('Claude API timeout after 30 seconds')), 30000)
       );
       
       claudeResponse = await Promise.race([claudePromise, timeoutPromise]);

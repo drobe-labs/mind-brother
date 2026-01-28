@@ -227,7 +227,7 @@ const extractTopics = (userMessage) => {
 
   if (message.match(/financ|money|debt|bill|income|afford/)) topics.push('financial stress');
   if (message.match(/wife|husband|partner|relationship|marriage/)) topics.push('relationship');
-  if (message.match(/work|job|career|employ|boss|project management|sales|marketing|engineering|developer|manager|experience|position|role|industry|field|profession|transition|switch careers|change careers/)) topics.push('work');
+  if (message.match(/work|job|career|employ|boss|project management|sales|marketing|engineering|developer|manager|experience|position|role|industry|field|profession|transition|switch careers|change careers|grind|commute|commuting|transport|train|bus|subway|metro|office|9 to 5|nine to five|early morning|long day at work|daily routine/)) topics.push('work');
   if (message.match(/depress|anxi|stress|worry|overwhelm/)) topics.push('mental health');
   if (message.match(/guilt|shame|inadequate|failure/)) topics.push('self-worth');
   if (message.match(/family|parent|child|kid/)) topics.push('family');
@@ -238,6 +238,26 @@ const extractTopics = (userMessage) => {
 // ⭐ GRACEFUL DEGRADATION: Fallback response when Claude API fails
 const getFallbackResponse = (userMessage, intents, topics, context) => {
   const message = userMessage.toLowerCase();
+  
+  // ⭐ NEW: Check for positive sentiment FIRST - user is saying things are fine!
+  const positivePatterns = [
+    /\b(all good|its? good|i'm good|doing good|things are good|everything is fine|no worries|not bad|pretty good)\b/i,
+    /\b(good place|feeling (good|great|better|fine|okay))\b/i,
+    /\b(nothing (specific|major|serious)|not really|just the (usual|normal|grind))\b/i,
+  ];
+  
+  const isPositiveMessage = positivePatterns.some(p => p.test(message));
+  
+  if (isPositiveMessage && !message.match(/suicide|kill|hurt|harm|die|hopeless|worthless/)) {
+    console.log('😊 Positive message detected in fallback - giving supportive response');
+    const positiveResponses = [
+      "That's good to hear, brother! The daily grind can be tiring, but it sounds like you're handling it well. Taking time to decompress is important. Anything fun planned for the evening?",
+      "I'm glad things are going okay! Sometimes the routine stuff can wear you down, but you're keeping your head up. What helps you unwind after a long day?",
+      "Good to hear you're doing alright! The commute and early mornings can be draining. How do you usually recharge when you get home?",
+      "Sounds like a normal day then - nothing wrong with that! It's good you're taking a moment to check in. What's keeping you going lately?"
+    ];
+    return positiveResponses[Math.floor(Math.random() * positiveResponses.length)];
+  }
   
   // Crisis fallback
   if (intents.includes('crisis') || message.match(/suicide|kill myself|end my life|want to die/)) {
@@ -259,15 +279,20 @@ I want to make sure you get the support you need. While I'm here to listen, some
 Would you like me to share some resources for finding support? Or is there something specific you'd like to talk about right now?`;
   }
   
-  // Career/work stress fallback
-  if (topics.includes('work') || intents.includes('workStress')) {
-    return `I hear you, brother. Career transitions and work challenges can feel overwhelming, especially when you're stepping into something new.
+  // Career/work stress fallback - ⭐ UPDATED: Added more work-related keywords
+  const isWorkRelated = topics.includes('work') || intents.includes('workStress') ||
+    message.match(/\b(grind|commute|commuting|transport|train|bus|subway|metro|early morning|long day|office|9 to 5|nine to five)\b/i);
+  
+  if (isWorkRelated) {
+    return `I hear you, brother. The daily grind - early mornings, commute, the whole routine - can really add up.
 
-What's weighing on you most about this situation? Is it the uncertainty, the skills gap, or something else? I'm here to help you think through it.`;
+What's been the toughest part lately? Is it the hours, the work itself, or just the overall routine? I'm here to listen.`;
   }
   
-  // Relationship fallback (separate from work)
-  if (intents.includes('relationshipConcerns') || topics.includes('relationship')) {
+  // Relationship fallback (separate from work) - ⭐ UPDATED: Check CURRENT message for relationship keywords
+  const hasRelationshipInCurrentMessage = message.match(/\b(wife|husband|partner|girlfriend|boyfriend|marriage|relationship|dating|spouse)\b/i);
+  
+  if (hasRelationshipInCurrentMessage || (intents.includes('relationshipConcerns') && !isWorkRelated)) {
     return `I understand this is weighing on you. Relationship issues can really be tough to navigate.
 
 What's been the hardest part about this situation? I'm here to listen and help you think through it.`;

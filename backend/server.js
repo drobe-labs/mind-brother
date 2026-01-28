@@ -652,9 +652,28 @@ app.post('/api/chat', async (req, res) => {
       content: userMessageContent
     });
     
-    // ⭐ CRISIS ESCALATION: Check for crisis FIRST (before anything else)
+    // ⭐ NEW: Check for positive sentiment FIRST - skip crisis detection for happy messages
+    const isPositiveSentiment = (msg) => {
+      const lower = msg.toLowerCase();
+      const positivePatterns = [
+        /\b(good place|doing (well|good|great|fine|okay|ok|better)|feeling (good|great|better|happy|relaxed|calm))\b/i,
+        /\b(check[\s-]?in|checking in|just wanted to (say hi|chat|talk))\b/i,
+        /\b(relaxing|watching|enjoying|having (fun|tea|coffee|a good))\b/i,
+        /\b(grateful|thankful|blessed|appreciate|happy|content|peaceful)\b/i,
+        /\b(had a (good|great|nice) day|things are going (well|good))\b/i,
+        /\b(feeling (much )?better|improving|progress|getting better)\b/i,
+      ];
+      const hasCrisisWords = /\b(suicid|kill|hurt|harm|die|dead|hopeless|worthless|can't (go on|take it|do this))\b/i.test(lower);
+      return positivePatterns.some(p => p.test(lower)) && !hasCrisisWords;
+    };
+    
+    if (isPositiveSentiment(userMessage)) {
+      console.log('😊 Positive sentiment detected - skipping crisis check');
+    }
+    
+    // ⭐ CRISIS ESCALATION: Check for crisis (skip if positive sentiment)
     const crisisManager = getCrisisManager();
-    const crisisCheck = crisisManager.detectCrisisSeverity(userMessage, { 
+    const crisisCheck = isPositiveSentiment(userMessage) ? null : crisisManager.detectCrisisSeverity(userMessage, { 
       category: classifyIntent(userMessage, context).includes('crisis') ? 'CRISIS' : 'GENERAL'
     });
     

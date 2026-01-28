@@ -59,7 +59,7 @@ export class ClaudeEnhancedChatbotService {
 
   constructor() {
     // Use environment variable or local network IP for mobile device testing
-    this.backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://192.168.5.180:3001';
+    this.backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://mind-brother-production.up.railway.app';
     console.log('🤖 ClaudeEnhancedChatbot initialized with backend:', this.backendUrl);
   }
 
@@ -129,6 +129,30 @@ export class ClaudeEnhancedChatbotService {
   /**
    * Quick crisis check for initial screening before cultural context analysis
    */
+  /**
+   * Detect clearly positive/neutral messages that should NOT trigger crisis mode
+   * This helps prevent false positives when users are doing well
+   */
+  private isPositiveSentiment(message: string): boolean {
+    const lowerMessage = message.toLowerCase();
+    
+    // Positive indicators
+    const positivePatterns = [
+      /\b(good place|doing (well|good|great|fine|okay|ok|better)|feeling (good|great|better|happy|relaxed|calm))\b/i,
+      /\b(check[\s-]?in|checking in|just wanted to (say hi|chat|talk))\b/i,
+      /\b(relaxing|watching|enjoying|having (fun|tea|coffee|a good))\b/i,
+      /\b(grateful|thankful|blessed|appreciate|happy|content|peaceful)\b/i,
+      /\b(had a (good|great|nice) day|things are going (well|good))\b/i,
+      /\b(feeling (much )?better|improving|progress|getting better)\b/i,
+    ];
+    
+    // If message contains positive patterns AND doesn't contain crisis indicators
+    const hasPositive = positivePatterns.some(p => p.test(lowerMessage));
+    const hasCrisisWords = /\b(suicid|kill|hurt|harm|die|dead|hopeless|worthless|can't (go on|take it|do this))\b/i.test(lowerMessage);
+    
+    return hasPositive && !hasCrisisWords;
+  }
+
   private quickCrisisCheck(message: string): {
     detected: boolean;
     type: string;
@@ -136,6 +160,12 @@ export class ClaudeEnhancedChatbotService {
     severity: number;
   } {
     const lowerMessage = message.toLowerCase();
+    
+    // ⭐ NEW: Check for positive sentiment FIRST - skip crisis check for clearly positive messages
+    if (this.isPositiveSentiment(message)) {
+      console.log('😊 Positive sentiment detected - skipping crisis check');
+      return { detected: false, type: 'positive', confidence: 0, severity: 0 };
+    }
     
     // Critical: Explicit suicidal statements (highest priority)
     if (/\b(suicide|kill myself|want to die|end my life|end it all|going to kill myself|planning to kill myself)\b/i.test(message)) {
@@ -192,7 +222,13 @@ export class ClaudeEnhancedChatbotService {
       const baseCrisisCheck = this.quickCrisisCheck(userMessage);
       let culturalCrisisAssessment: CrisisAssessment | null = null;
       
-      if (baseCrisisCheck.detected || culturalSystemPrompt) {
+      // ⭐ NEW: Clear crisis state when user shows positive sentiment
+      if (baseCrisisCheck.type === 'positive' || this.isPositiveSentiment(userMessage)) {
+        console.log('😊 User showing positive sentiment - clearing crisis monitoring state');
+        crisisMonitor.riskLevel = 'none';
+        crisisMonitor.indicators = []; // Clear old indicators
+        // Don't run cultural crisis detection for positive messages
+      } else if (baseCrisisCheck.detected || culturalSystemPrompt) {
         // Use cultural-aware crisis detection
         try {
           culturalCrisisAssessment = await detectCrisisWithCulturalContext(

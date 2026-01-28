@@ -124,10 +124,39 @@ class CrisisEscalationManager {
   }
   
   /**
+   * Check if message has positive/neutral sentiment (should skip crisis detection)
+   */
+  isPositiveSentiment(message) {
+    const lower = message.toLowerCase();
+    
+    // Positive indicators - user is doing well
+    const positivePatterns = [
+      /\b(good place|doing (well|good|great|fine|okay|ok|better)|feeling (good|great|better|happy|relaxed|calm))\b/i,
+      /\b(check[\s-]?in|checking in|just wanted to (say hi|chat|talk))\b/i,
+      /\b(relaxing|watching|enjoying|having (fun|tea|coffee|a good))\b/i,
+      /\b(grateful|thankful|blessed|appreciate|happy|content|peaceful)\b/i,
+      /\b(had a (good|great|nice) day|things are going (well|good))\b/i,
+      /\b(feeling (much )?better|improving|progress|getting better)\b/i,
+    ];
+    
+    // Crisis words that should override positive sentiment
+    const hasCrisisWords = /\b(suicid|kill|hurt|harm|die|dead|hopeless|worthless|can't (go on|take it|do this))\b/i.test(lower);
+    
+    // Return true if positive AND no crisis words
+    return positivePatterns.some(p => p.test(lower)) && !hasCrisisWords;
+  }
+
+  /**
    * Detect crisis severity level
    */
   detectCrisisSeverity(message, classification = {}) {
     const lowerMessage = message.toLowerCase();
+    
+    // ⭐ NEW: Skip crisis detection for clearly positive messages
+    if (this.isPositiveSentiment(message)) {
+      console.log('😊 Positive sentiment detected - skipping crisis detection');
+      return null;
+    }
     
     // Check severe indicators first (highest priority)
     for (const indicator of CRISIS_ESCALATION.severe.indicators) {

@@ -583,7 +583,7 @@ export default function Discussions({ initialTopicId, initialReplyId, onTopicVie
       const notes = resolutionNotes[id] || '';
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error('Not authenticated');
-      const resp = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://192.168.5.180:3001'}/api/moderation/disputes/${id}/resolve`, {
+      const resp = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://mind-brother-production.up.railway.app'}/api/moderation/disputes/${id}/resolve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

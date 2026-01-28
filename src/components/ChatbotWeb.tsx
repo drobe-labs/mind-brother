@@ -240,7 +240,7 @@ export default function ChatbotWeb({ user, profile, onNavigateToBreathing, onNav
       // For Capacitor apps, use the configured backend URL or Mac's IP for device testing
       const isCapacitor = window.location.protocol === 'capacitor:';
       const backendUrl = import.meta.env.VITE_BACKEND_URL 
-        || 'http://192.168.5.180:3001';
+        || 'https://mind-brother-production.up.railway.app';
       
       console.log('🎤 Calling ElevenLabs via backend...');
       
@@ -305,7 +305,7 @@ export default function ChatbotWeb({ user, profile, onNavigateToBreathing, onNav
     
     try {
       const backendUrl = import.meta.env.VITE_BACKEND_URL 
-        || 'http://192.168.5.180:3001';
+        || 'https://mind-brother-production.up.railway.app';
       
       console.log('🎤 Auto-playing ElevenLabs voice...');
       

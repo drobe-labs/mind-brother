@@ -264,7 +264,7 @@ const FitnessWorkout = ({ onBack }: FitnessWorkoutProps) => {
 
   // Generate speech via backend proxy
   const generateSpeech = async (text: string): Promise<Blob> => {
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://192.168.5.180:3001';
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://mind-brother-production.up.railway.app';
     
     const response = await fetch(`${backendUrl}/api/text-to-speech`, {
       method: 'POST',

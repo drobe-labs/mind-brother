@@ -202,7 +202,7 @@ const GuidedBreathing = ({ initialExercise, onBack }: GuidedBreathingProps) => {
 
   // Generate speech via backend proxy
   const generateSpeech = async (text: string): Promise<Blob> => {
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://192.168.5.180:3001';
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://mind-brother-production.up.railway.app';
     
     abortControllerRef.current = new AbortController();
     

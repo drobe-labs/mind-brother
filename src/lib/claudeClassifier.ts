@@ -1,7 +1,7 @@
 // Claude-Powered Message Classification
 // Uses Claude's intelligence for disambiguation instead of brittle regex
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://192.168.5.180:3001';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://mind-brother-production.up.railway.app';
 
 export interface ClaudeClassificationResult {
   category: 'CRISIS' | 'EMPLOYMENT' | 'RELATIONSHIP' | 'MENTAL_HEALTH' | 'TECH_ISSUE' | 'GENERAL';

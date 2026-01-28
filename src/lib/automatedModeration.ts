@@ -3,7 +3,7 @@
 
 import { supabase } from './supabase';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://192.168.5.180:3001';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://mind-brother-production.up.railway.app';
 
 /**
  * Trigger automated moderation for a report

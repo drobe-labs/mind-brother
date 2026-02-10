@@ -89,6 +89,12 @@ const intentPatterns = {
   depression: {
     primary: /\b(depress(?:ed|ion)?|hopeless|empty|numb|suicidal|no point|give up|worthless)\b/i,
     secondary: /\b(can't feel|nothing matters|no energy|no motivation|want to (?:die|end it))\b/i
+  },
+  militaryVeteran: {
+    primary: /\b(deploy(?:ed|ment)?|veteran|military|combat|war(?:zone)?|soldier|service(?:member)?|army|navy|marines?|air force|coast guard|national guard|reserves?)\b/i,
+    secondary: /\b(afghanistan|iraq|vietnam|korea|gulf war|overseas|tour|mission|battle|firefight|ied|convoy|patrol|base|barracks|ptsd|flashback|trigger(?:ed)?)\b/i,
+    contextual: /\b(served|service|enlisted|commissioned|discharged|separated|medically retired|va |v\.a\.|veterans affairs)\b/i,
+    trauma: /\b(took me back|brought back|reminded me|memories of|haunted by|can't forget|still see|still hear|nightmares? about)\b/i
   }
 };
 
@@ -112,6 +118,7 @@ const classifyIntent = (userMessage, context = {}) => {
     if (patterns.inadequacy && patterns.inadequacy.test(message)) detected.add(intent);
     if (patterns.conversational && patterns.conversational.test(message)) detected.add(intent);
     if (patterns.explicit && patterns.explicit.test(message)) detected.add(intent);
+    if (patterns.trauma && patterns.trauma.test(message)) detected.add(intent);
   }
 
   // Pass 3: Contextual inference from conversation history
@@ -231,6 +238,8 @@ const extractTopics = (userMessage) => {
   if (message.match(/depress|anxi|stress|worry|overwhelm/)) topics.push('mental health');
   if (message.match(/guilt|shame|inadequate|failure/)) topics.push('self-worth');
   if (message.match(/family|parent|child|kid/)) topics.push('family');
+  // Military/veteran/combat trauma detection
+  if (message.match(/military|veteran|deploy|combat|war|soldier|army|navy|marines?|air force|afghanistan|iraq|vietnam|korea|gulf|ptsd|flashback|trigger|took me back|brought back|served|service|tour|mission|battle|ied|convoy|va |v\.a\./i)) topics.push('military/veteran');
   
   return topics;
 };
@@ -277,6 +286,19 @@ You're not alone, and there are people who want to help you right now. Please re
 I want to make sure you get the support you need. While I'm here to listen, sometimes talking with a professional counselor or therapist can be really helpful.
 
 Would you like me to share some resources for finding support? Or is there something specific you'd like to talk about right now?`;
+  }
+  
+  // ⭐ Military/veteran PTSD fallback - CHECK FIRST before other categories
+  const isMilitaryVeteran = topics.includes('military/veteran') || intents.includes('militaryVeteran') ||
+    message.match(/\b(deploy(?:ed|ment)?|veteran|military|combat|war|soldier|army|navy|marines?|air force|afghanistan|iraq|vietnam|korea|gulf|ptsd|flashback|took me back|brought back|served|service|tour|mission|battle)\b/i);
+  
+  if (isMilitaryVeteran) {
+    console.log('🎖️ Military/veteran content detected in fallback');
+    return `I hear you, brother. What you're describing - the news triggering memories of your deployment - that's a real and valid experience. Combat trauma doesn't just go away, and certain things can bring it all back.
+
+You served, and what you experienced leaves a mark. You don't have to carry this alone.
+
+Would you like to talk more about what's coming up for you? Or if you'd prefer, I can share some resources specifically for veterans dealing with these kinds of triggers. Either way, I'm here.`;
   }
   
   // Career/work stress fallback - ⭐ UPDATED: Added more work-related keywords

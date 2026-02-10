@@ -2767,6 +2767,139 @@ export const mentalHealthKnowledge = [
     content: "Combat trauma (veterans): PTSD from military service—combat, IEDs, witnessing death, moral injury. For diverse veterans: Fight for country that discriminates, higher rates of PTSD, less access to VA care, military sexual trauma (men too), reintegration challenges. Symptoms: Flashbacks, hypervigilance, survivor guilt, moral injury ('I killed people'), difficulty reintegrating. Treatment: VA services, veteran-specific therapy (CPT, PE), peer support, service dogs. You served. You deserve care. Combat trauma is real trauma.",
     tags: ["combat trauma", "PTSD", "veterans", "military", "moral injury", "VA"]
   },
+  // =============================================================================
+  // COMPREHENSIVE MILITARY/VETERAN PTSD KNOWLEDGE BASE
+  // =============================================================================
+  {
+    category: "iraq_afghanistan_combat",
+    content: "Iraq & Afghanistan (Post-9/11) unique combat stressors: Asymmetric warfare—no clear front lines, constant threat from anywhere. 'Every street corner could kill you. Every kid could be carrying an IED. You never turn it off.' IED exposure causes catastrophic injuries—traumatic amputations, TBI, watching friends die instantly. The sound of trash on the roadside can trigger panic attacks decades later. Repetitive deployments—multiple 12-15 month tours with minimal dwell time. 'By my third deployment, I didn't know how to be a dad anymore.' Urban warfare—house-to-house clearing, civilian casualties, children in combat zones. Rules of engagement complexity—split-second life/death decisions under ambiguous circumstances.",
+    tags: ["Iraq", "Afghanistan", "IED", "combat trauma", "PTSD", "veterans", "Post-9/11", "deployment"]
+  },
+  {
+    category: "iraq_afghanistan_traumatic_events",
+    content: "Specific traumatic events in Iraq/Afghanistan: Vehicle rollovers from IEDs—trapped, burning, screaming. Medevac missions—holding dying friends, their blood on your hands. Mass casualty events—deciding who lives, who dies (triage). Sniper attacks—watching someone next to you drop dead mid-sentence. Night raids—kicking in doors, women screaming, children crying, moral ambiguity. Burn pit exposure—toxic fumes combined with combat creates compounded health trauma. 'I kicked down a door and there was a family eating dinner. The father reached for something. I fired. It was a phone.' These memories don't fade. They need professional treatment.",
+    tags: ["Iraq", "Afghanistan", "IED", "medevac", "combat trauma", "PTSD", "veterans", "triage", "night raids"]
+  },
+  {
+    category: "vietnam_veteran_trauma",
+    content: "Vietnam Era veteran trauma: Guerrilla warfare—invisible enemy, booby traps, tunnel warfare. 'You couldn't trust the ground beneath your feet.' Hostile homecoming—protesters calling them 'baby killers,' no parades, shame and isolation. 'I came home and people spit on me. I never wore my uniform again.' Agent Orange exposure—chemical warfare aftermath, cancer, birth defects in children, compounded guilt. Survival guilt from lottery system—'My buddy's draft number was called. Mine wasn't. He died. I lived. Why?' Decades of untreated PTSD—told to 'man up,' self-medicated with alcohol/drugs, destroyed families before PTSD diagnosis even existed. Vietnam veterans: You deserved better. It's never too late to get help.",
+    tags: ["Vietnam", "veterans", "PTSD", "Agent Orange", "homecoming", "draft", "guerrilla warfare"]
+  },
+  {
+    category: "gulf_war_korea_wwii_veterans",
+    content: "Gulf War, Korea & WWII Veterans: Gulf War (1990-91)—swift victory but chemical weapon exposure fears (SCUD missiles), Desert Storm syndrome with mysterious illnesses, 'Highway of Death' witnessing mass obliteration—ethical distress. Korea—'The Forgotten War' with lack of recognition compounding isolation, Chosin Reservoir cold weather trauma. WWII—D-Day, Holocaust liberation, atomic bomb aftermath—carrying images for 80 years. Delayed onset PTSD: Symptoms emerging in retirement after decades of suppression. 'I'm 85 and I'm finally having nightmares about things I saw at 20.' For older veterans: It's not too late. Your service mattered. Your pain is valid. Help exists.",
+    tags: ["Gulf War", "Korea", "WWII", "veterans", "PTSD", "Desert Storm", "delayed onset", "elderly veterans"]
+  },
+  {
+    category: "deployment_stress_predeployment",
+    content: "Pre-deployment stress: Anticipatory anxiety for service members—'Will I die? Will I kill? How will I change?' For families—'Will they come back? Will they come back whole?' Financial stress—settling affairs, wills, life insurance discussions. Relationship strain—increased conflict, pulling away emotionally to 'prepare' for loss. Children acting out—clinginess, behavioral problems, academic decline. The stress of preparing for war can be traumatic before you even deploy. Saying goodbye might be forever. That weight stays with everyone.",
+    tags: ["deployment", "pre-deployment", "anxiety", "families", "military", "stress", "veterans"]
+  },
+  {
+    category: "deployment_during_separation",
+    content: "During deployment separation: For service members—Emotional numbing to survive ('I couldn't let myself miss them. If I felt too much, I'd hesitate. Hesitation gets you killed.'), guilt over missing milestones (first steps, birthdays, births, deaths), limited communication (satellite calls cut short, emails delayed days), compartmentalization creating 'deployment self' vs. 'home self,' hypermasculine environment suppressing vulnerability. For families—suddenly single-parent stress managing everything alone, constant fear (every knock could be notification officers), communication frustration ('He won't tell me anything real'), role confusion when spouse becomes self-sufficient, children's trauma ('Where's daddy?'), infidelity risks from loneliness and disconnection on both sides.",
+    tags: ["deployment", "separation", "families", "military", "communication", "stress", "children"]
+  },
+  {
+    category: "reintegration_crisis_homecoming",
+    content: "Reintegration crisis—the homecoming nobody talks about: First three months—Stranger in the house ('I don't know this person anymore'), hypervigilance at home (scanning for threats, checking under cars, sleeping with weapons), sensory overload (crowds, loud noises, fireworks = panic, 'The 4th of July is hell'), loss of purpose ('I had a mission. I mattered. Now I'm just folding laundry'), role renegotiation fights ('You weren't here. You don't get to decide'), intimacy issues (cannot be vulnerable, sexual dysfunction, nightmares during sex), parenting struggles ('My kids are scared of me'). Coming home is a battle too. Transition takes time. Get support.",
+    tags: ["reintegration", "homecoming", "veterans", "PTSD", "family", "transition", "hypervigilance"]
+  },
+  {
+    category: "reintegration_long_term",
+    content: "Long-term reintegration challenges: Identity crisis—'I was Sergeant Johnson. Now I'm just... unemployed.' Civilian workplace culture shock—'My boss never deployed. He's worried about quarterly reports. I can't make myself care.' Nostalgia for combat—missing the clarity, brotherhood, purpose, feeling guilty for missing war. Adrenaline addiction—civilian life feels 'boring,' risk-taking behaviors (speeding, fighting, extreme sports). Family resentment—'I sacrificed everything. Why isn't anyone grateful?' Children's adjustment—kids grew up while you were gone, now you're a stranger. Guard & Reserve unique stressors—dual identity whiplash (teacher Monday, combat medic Friday), less institutional support, civilian employer discrimination. Transition is hard. You're not failing—you're adjusting.",
+    tags: ["reintegration", "transition", "veterans", "identity", "civilian", "National Guard", "Reserve"]
+  },
+  {
+    category: "moral_injury_definition",
+    content: "Moral injury: Psychological, spiritual, and relational damage from transgressing deeply held moral beliefs or witnessing others do so. Not a mental disorder—it's a soul wound. Key difference from PTSD: PTSD is fear-based ('I'm in danger'), moral injury is shame/guilt-based ('I am bad, I violated who I am'). Acts of commission (what I did)—killing in morally ambiguous situations, civilian casualties ('I called in the airstrike. Intel was wrong. I killed a wedding party'), following unethical orders. Agonizing questions: 'Does God forgive me? Am I still human? Would my children be ashamed if they knew?' Moral injury requires specialized treatment beyond standard PTSD therapy.",
+    tags: ["moral injury", "PTSD", "veterans", "guilt", "shame", "trauma", "spiritual", "ethics"]
+  },
+  {
+    category: "moral_injury_omission_betrayal",
+    content: "Moral injury from omission and betrayal: Acts of omission (what I failed to do)—'I applied the tourniquet but he bled out in my arms. Maybe if I'd been faster...', triage decisions ('I left the dying to save the savable. I still hear him calling my name'), not reporting abuse (witnessed war crimes but stayed silent). Betrayal-based moral injury—by leadership ('My commander ordered us into an ambush for his career advancement'), by system ('I fought for freedom. The VA denied my claim three times. I'm homeless'), by society ('I killed for this country. Civilians say thank you but cross the street when they see me'). Betrayal wounds run deep. Your anger is valid. Healing is still possible.",
+    tags: ["moral injury", "betrayal", "veterans", "guilt", "leadership", "VA", "trauma"]
+  },
+  {
+    category: "survivors_guilt_veterans",
+    content: "Survivor's guilt—the cruelest weight: 'Why them, not me?'—'We drew straws for who rode in which vehicle. I lost. My vehicle didn't get hit. He won and died.' Anniversary reactions every year on the date they died. 'I didn't do enough'—replaying the moment endlessly, changing variables, torturing yourself with 'what ifs.' 'I don't deserve to be happy'—'He'll never see his daughter graduate. I don't get to celebrate mine.' Cannot enjoy anything. Self-sabotage. 'If I succeed, it's betraying them.' The dead are frozen in time—'He died at 19. I'm 45 now with grandkids. Why do I get that?' Guilt over moving on—'I laughed today. I'm a traitor.' Survivor's guilt is treatable. Living fully honors those who died.",
+    tags: ["survivor guilt", "veterans", "PTSD", "grief", "loss", "trauma", "healing"]
+  },
+  {
+    category: "military_sexual_trauma_mst",
+    content: "Military Sexual Trauma (MST): 1 in 4 women and 1 in 100 men experience MST—but men are 50% of MST survivors due to higher numbers serving. 38% of MST survivors develop PTSD (higher than combat PTSD rates). Unique aspects: Betrayal by brotherhood ('I trusted him. We were supposed to watch each other's backs. He raped me instead'), trapped environment (cannot leave military easily, confined living quarters, perpetrator controls your safety), reporting consequences (retaliation, ostracism, bad fitness reports, 'Don't ruin his career' pressure—only 7% result in conviction). MST + combat = complex trauma. VA provides free MST treatment regardless of discharge status. You are not alone. It was not your fault.",
+    tags: ["MST", "military sexual trauma", "veterans", "sexual assault", "PTSD", "VA", "trauma"]
+  },
+  {
+    category: "mst_men_specific",
+    content: "MST for men—double stigma: Male rape victim in hypermasculine military culture = 'You're not a man.' Hazing culture normalizes sexual violence ('It's just guys being guys'). Fear of homosexual labeling—'If I report, they'll think I'm gay and I wanted it.' Even less likely to report than women (estimated only 2% report). Prison-like dynamics in barracks, ships, submarines. 'I was hazed. They held me down. Multiple guys. I never told anyone. I got out and drank myself to death for 10 years.' If this happened to you: It was assault. It wasn't your fault. You're still a man. Real strength is getting help. VA has men-only MST treatment groups.",
+    tags: ["MST", "military sexual trauma", "men", "veterans", "sexual assault", "hazing", "stigma"]
+  },
+  {
+    category: "va_healthcare_eligibility",
+    content: "VA Healthcare System: Most veterans eligible based on service. Priority groups 1-8 based on combat status, service-connected disabilities, income. Special access for MST survivors regardless of discharge status or length of service. Enrollment: Apply online, by phone, or in person at VA Medical Center. Barriers to access: Wait times (improving with community care), distance (rural veterans may drive hours), bureaucracy (claims can take years), stigma ('Real men don't need therapy'), distrust ('The VA failed my dad. Why would I go?'). Don't let barriers stop you. You earned these benefits. Vet Centers offer free counseling without VA enrollment.",
+    tags: ["VA", "healthcare", "veterans", "eligibility", "enrollment", "benefits", "access"]
+  },
+  {
+    category: "veteran_ptsd_therapy_cpt_pe",
+    content: "Evidence-based PTSD therapies for veterans: Cognitive Processing Therapy (CPT)—12 sessions challenging 'stuck points' like 'I should have saved him' or 'I'm a monster.' Write trauma account, identify cognitive distortions, build balanced beliefs. 'CPT made me write about the worst day of my life. Facing it on paper was less scary than it living in my head.' Prolonged Exposure (PE)—8-15 sessions of gradual exposure to trauma memories and avoided situations. Retell traumatic event until emotional response decreases. 'Learn the memory can't hurt me now.' Face avoided situations systematically (driving after IED, crowds, loud noises). Both therapies are proven effective. Recovery is possible.",
+    tags: ["CPT", "PE", "PTSD", "therapy", "veterans", "evidence-based", "treatment", "VA"]
+  },
+  {
+    category: "veteran_ptsd_therapy_emdr_act",
+    content: "More PTSD therapies for veterans: EMDR (Eye Movement Desensitization and Reprocessing)—uses bilateral stimulation while recalling trauma. Less talking required. Good for those who struggle verbalizing trauma. 'I thought EMDR was woo-woo bullshit. After 6 sessions, the nightmares stopped. I don't understand it, but it worked.' ACT (Acceptance and Commitment Therapy)—focus on accepting painful thoughts rather than eliminating them. Values-driven action despite discomfort. 'You can't undo what happened. You can choose who you are now.' Good for moral injury when changing thoughts doesn't resolve shame. Group therapy—brotherhood restored ('These people get it. I don't have to explain'), normalization ('I'm not the only one'), accountability.",
+    tags: ["EMDR", "ACT", "PTSD", "therapy", "veterans", "group therapy", "treatment"]
+  },
+  {
+    category: "veteran_specific_programs",
+    content: "Veteran-specific programs: Vet Centers—300+ locations, separate from VA hospitals, smaller and less institutional, free confidential counseling, no VA enrollment needed. Residential PTSD Programs—1-3 months intensive inpatient for severe PTSD not responding to outpatient. TeleMentalHealth—video therapy for rural veterans, reduces distance barriers. Whole Health Programs—yoga, acupuncture, meditation, tai chi, wellness coaching, 'treating the whole person.' Service Dogs—grounding during panic attacks, nightmare interruption, hypervigilance reduction ('Dog watches the door, I can relax'), social buffer, routine and purpose. Programs: K9s for Warriors, Puppies Behind Bars. Peer Support—veterans helping veterans navigate VA, share coping strategies, crisis line staffed by veterans (988 press 1).",
+    tags: ["Vet Centers", "residential", "telehealth", "service dogs", "peer support", "veterans", "VA programs"]
+  },
+  {
+    category: "veteran_suicide_statistics",
+    content: "Veteran suicide reality: Average 17 veterans die by suicide daily (updated data, though '22 a day' remains cultural rallying cry). Veteran suicide rate 1.5x higher than civilian rate. Firearms account for 69% of veteran suicides. Post-9/11 veterans have higher rates than Vietnam-era veterans. Peak risk periods: First year after separation, around trauma anniversaries, holidays. Why higher risk: Firearms training and access, transition struggles (loss of identity, purpose, structure), unemployment, homelessness, chronic pain + TBI + PTSD triple threat, untreated moral injury ('I don't deserve to live'), cultural barriers ('Suck it up'), institutional failures (denied claims = hopelessness). You are not a statistic. Help exists. Call 988, press 1.",
+    tags: ["veteran suicide", "statistics", "prevention", "988", "crisis", "firearms", "risk factors"]
+  },
+  {
+    category: "veteran_suicide_warning_signs",
+    content: "Veteran suicide warning signs: Behavioral—giving away gear, weapons, military memorabilia ('I won't need this anymore'), increased alcohol/drug use, reckless behavior (driving fast, picking fights), withdrawing from veteran buddies and family, saying goodbye in coded ways ('Take care of my family'), suddenly calm after agitation (decision made = relief). Verbal cues—'I'm a burden,' 'They'd be better off without me,' 'I didn't die there but I should have,' 'I can't do this anymore,' talking about death as reunion ('I'll see my guys again soon'). Situational triggers—anniversary of traumatic event, holidays, VA claim denial, relationship breakup, job loss, friend's suicide. If you notice these signs in a veteran, ask directly: 'Are you thinking about suicide?' It could save a life.",
+    tags: ["veteran suicide", "warning signs", "prevention", "crisis", "intervention", "behavioral signs"]
+  },
+  {
+    category: "veteran_suicide_intervention",
+    content: "Veteran suicide intervention: Step 1—Call 988, press 1 (Veterans Crisis Line), staffed by VA responders (many are veterans), 24/7 confidential, text 838255, chat veteranscrisisline.net. Step 2—Call 911 if imminent danger, specify veteran status for CIT officers. Step 3—Do not leave them alone. Step 4—Remove means: Ask to hold firearms temporarily ('Can I keep these safe for you?'), remove ammunition separately, lock up medications. Step 5—Listen without judgment: 'I'm here. I'm not leaving. It's okay to not be okay. Let's get through tonight.' Means reduction: 'Time is on our side'—most suicidal crises are temporary (minutes to hours). Delay = survival. Frame as tactical: 'Secure your weapons. This is a tactical decision, not weakness.'",
+    tags: ["veteran suicide", "intervention", "988", "crisis", "means reduction", "firearms safety", "prevention"]
+  },
+  {
+    category: "veteran_safety_planning",
+    content: "Veteran safety planning: Step 1—Warning Signs: What does your crisis look like? (thoughts, feelings, behaviors). Step 2—Internal Coping: What can you do alone? (walk, music, breathing, shower). Step 3—Social Contacts: Who can distract you? (friends, family, NO talk of suicide yet). Step 4—People Who Can Help: Who knows about your struggles? (therapist, sponsor, battle buddy). Step 5—Professionals/Agencies: Crisis line, ER, VA. Step 6—Means Reduction: What needs to be locked up/removed? Stanley-Brown Safety Planning Intervention is VA gold standard. Peer programs: Mission 22 (veterans helping veterans), Stop Soldier Suicide (addresses root causes), Travis Manion Foundation (mentorship), Buddy Checks ('Just checking in, brother'). You're worth the plan.",
+    tags: ["safety planning", "veteran suicide", "crisis", "prevention", "peer support", "coping"]
+  },
+  {
+    category: "diverse_veterans_of_color",
+    content: "Black, Indigenous, and Veterans of Color: Unique stressors—fighting for a country that discriminates ('I wore the uniform. Cops still see me as a threat'), racism within military (disproportionate punishment, slower promotions), higher combat exposure rates historically, less trust in VA system (historical medical abuse—Tuskegee), cultural stigma around mental health ('We don't talk to white therapists'). Outcomes—higher PTSD rates, less likely to seek VA care, higher incarceration rates for PTSD-driven offenses, more likely to receive Other Than Honorable discharges. Culturally responsive care: Minority veteran peer support groups, therapists of color when possible, addressing racism as trauma (racial trauma + combat trauma), community-based care. You served. You deserve care that understands your full experience.",
+    tags: ["veterans of color", "Black veterans", "racism", "diversity", "cultural", "VA", "PTSD"]
+  },
+  {
+    category: "women_veterans_ptsd",
+    content: "Women veterans and PTSD: Often not recognized as veterans ('Thank your husband for his service'). Excluded from 'brothers in arms' narrative. Less connected to veteran identity/community. Unique PTSD sources: MST (military sexual trauma), harassment and discrimination during service ('prove you're tough enough'), dual stigma of woman + veteran + mental illness. Barriers to care: Male-dominated VA spaces (uncomfortable, triggering), lack of women-specific services until recently, childcare responsibilities. Progress: Women's health clinics at VA, women veteran coordinators, gender-specific PTSD groups. Women veterans: You served. You are veterans. You deserve recognition and care.",
+    tags: ["women veterans", "PTSD", "MST", "VA", "gender", "recognition", "healthcare"]
+  },
+  {
+    category: "lgbtq_veterans_ptsd",
+    content: "LGBTQ+ veterans and PTSD: Historical context—pre-2011 'Don't Ask, Don't Tell' forced secrecy, discharge if discovered meant loss of benefits, dishonorable record, shame. PTSD sources: Hiding identity = chronic stress, harassment/assault if outed, lack of partner recognition (pre-2015), moral injury ('I served a country that denied my humanity'). Current challenges: Distrust of VA (historically hostile), fear of discrimination in treatment, few LGBTQ+-competent providers. Resources: VA LGBTQ+ Veteran Care Coordinator at each facility, OutServe-SLDN, Modern Military Association of America. LGBTQ+ veterans: Your service was real. Your trauma is valid. You deserve affirming care.",
+    tags: ["LGBTQ", "veterans", "PTSD", "DADT", "discrimination", "VA", "affirming care"]
+  },
+  {
+    category: "veteran_recovery_hope",
+    content: "Hope and recovery for veterans: Recovery is possible. Not all veterans have PTSD. Not all PTSD is permanent. With treatment, 60-80% of veterans see significant improvement. Many report post-traumatic growth: 'I'm not glad it happened, but I'm stronger because I survived it.' What helps: Find your tribe (veteran peer support), purpose over happiness (volunteering, mentoring), get a dog (companionship, routine, grounding), move your body (exercise as trauma processing), tell your story when ready. What doesn't work: 'Suck it up' mentality, one-size-fits-all therapy, 'Just forgive yourself,' 'Move on,' 'You're a hero' (many don't feel like heroes). You are not your trauma. You are not your worst day. You fought for others. Now fight for yourself. Your brothers and sisters who didn't make it home—they'd want you to live fully. Seeking help is not weakness. It's the next mission.",
+    tags: ["veteran recovery", "hope", "PTSD", "healing", "post-traumatic growth", "purpose", "help"]
+  },
+  {
+    category: "veterans_crisis_resources",
+    content: "Veterans Crisis Resources: Veterans Crisis Line—call 988, press 1 (24/7, confidential, staffed by veterans), text 838255, chat veteranscrisisline.net. Vet Centers—300+ locations, free counseling, no VA enrollment needed, vetcenter.va.gov. VA Mental Health—mentalhealth.va.gov. Make the Connection—maketheconnection.net (veterans sharing recovery stories). Team Red White & Blue—social connection through fitness. Team Rubicon—disaster relief volunteering restores purpose. K9s for Warriors—service dogs. Stop Soldier Suicide—case management approach. Mission 22—peer support. Travis Manion Foundation—mentorship. You are not alone. You are not beyond help. You matter.",
+    tags: ["veterans crisis", "988", "resources", "VA", "crisis line", "peer support", "service dogs"]
+  },
   {
     category: "childhood_trauma_nonsexual",
     content: "Childhood trauma (non-sexual): Types—Physical abuse (beatings, excessive punishment), emotional abuse (constant criticism, rejection), neglect (no food, medical care, supervision, affection), witnessing violence (DV, community violence). Impact: Attachment issues, emotional dysregulation, relationship difficulties, repeating patterns. Healing: Inner child work, EMDR, IFS, reparenting yourself. Childhood trauma shapes you, but it doesn't define you. You can heal. You can break cycles.",

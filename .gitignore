@@ -36,3 +36,5 @@ android/build/
 .env
 .env.*
 .env.backup
+android/keystore.properties
+android/keystore.properties

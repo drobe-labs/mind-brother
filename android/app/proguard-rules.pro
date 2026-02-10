@@ -1,4 +1,25 @@
-# Add project specific ProGuard rules here.
+# Keep Capacitor
+-keep class com.getcapacitor.** { *; }
+-keep interface com.getcapacitor.** { *; }
+
+# Keep Cordova
+-keep class org.apache.cordova.** { *; }
+
+# Keep WebView
+-keepclassmembers class * extends android.webkit.WebViewClient {
+    public void *(android.webkit.WebView, java.lang.String, android.graphics.Bitmap);
+    public boolean *(android.webkit.WebView, java.lang.String);
+}
+
+# Keep JavaScript Interface
+-keepattributes JavascriptInterface
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
+
+# Keep Firebase
+-keep class com.google.firebase.** { *; }
+-keep class com.google.android.gms.** { *; }# Add project specific ProGuard rules here.
 # You can control the set of applied configuration files using the
 # proguardFiles setting in build.gradle.
 #
